@@ -1,0 +1,30 @@
+# Dependencies and build output
+node_modules/
+client/node_modules/
+server/node_modules/
+client/dist/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+client/.env
+client/.env.*
+!client/.env.example
+server/.env
+server/.env.*
+!server/.env.example
+
+# Local database and clinical/user-uploaded data
+server/rxccdx.sqlite
+server/rxccdx.sqlite-shm
+server/rxccdx.sqlite-wal
+server/data/*
+!server/data/.gitkeep
+
+# Local editor and OS files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db

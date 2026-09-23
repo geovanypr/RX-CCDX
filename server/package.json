@@ -1,0 +1,28 @@
+{
+  "name": "rxccdx-server",
+  "version": "2.0.0",
+  "description": "RX CCDX - Servidor de gestión de estudios radiológicos",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "check": "node --check index.js && node --check db.js && node --check fs_manager.js && node --check word_generator.js && node --check middleware/auth.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "docx": "^9.7.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.0",
+    "socket.io": "^4.8.3"
+  }
+}

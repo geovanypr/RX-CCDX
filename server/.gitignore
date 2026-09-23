@@ -1,0 +1,7 @@
+.env
+node_modules/
+rxccdx.sqlite
+rxccdx.sqlite-shm
+rxccdx.sqlite-wal
+data/*
+!data/.gitkeep
