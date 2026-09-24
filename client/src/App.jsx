@@ -15,7 +15,7 @@ function App() {
     <AppErrorBoundary>
       <AuthProvider>
         <NotificationProvider>
-          <BrowserRouter basename="/RX-CCDX">
+          <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={
