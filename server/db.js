@@ -1,8 +1,12 @@
 'use strict';
 const Database = require('better-sqlite3');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const DB_PATH = path.join(__dirname, 'rxccdx.sqlite');
+// En producción (Render) la BD se guarda en el disco persistente montado en
+// /var/data para que sobreviva reinicios y redeploys. En desarrollo local se
+// guarda junto al código como antes.
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'rxccdx.sqlite');
 const db = new Database(DB_PATH);
 
 // Performance pragmas

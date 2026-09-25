@@ -103,7 +103,9 @@ function fileFilter(req, file, cb) {
 }
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 }, fileFilter }); // 50MB max
 
-const communicationDir = path.join(__dirname, 'data', 'comunicacion');
+const communicationDir = process.env.DATA_DIR
+  ? path.join(process.env.DATA_DIR, 'comunicacion')
+  : path.join(__dirname, 'data', 'comunicacion');
 fs.mkdirSync(communicationDir, { recursive: true });
 const communicationStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, communicationDir),

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: rx-ccdx-page
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    plan: free
+    region: oregon
+
+    # Disco persistente para SQLite y archivos de pacientes.
+    # Render monta este volumen en /var/data y sobrevive a reinicios y redeploys.
+    disk:
+      name: rx-ccdx-data
+      mountPath: /var/data
+      sizeGB: 1
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3002"
+      - key: DATA_DIR
+        value: /var/data
+      - key: DB_PATH
+        value: /var/data/rxccdx.sqlite
+      - key: CORS_ORIGIN
+        value: http://localhost:5173,http://127.0.0.1:5173,https://geovanypr.github.io
+      # Genera estos valores con: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true

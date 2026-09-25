@@ -1,8 +1,13 @@
 'use strict';
 const fs   = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const DATA_DIR = path.join(__dirname, 'data', 'pacientes');
+// En producción (Render) los archivos se guardan en el disco persistente
+// montado en /var/data/pacientes. En desarrollo local, dentro de data/pacientes.
+const DATA_DIR = process.env.DATA_DIR
+  ? path.join(process.env.DATA_DIR, 'pacientes')
+  : path.join(__dirname, 'data', 'pacientes');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // ─── Utilidad de normalización ────────────────────────────────────────────────
