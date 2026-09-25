@@ -76,6 +76,12 @@ Genere un secreto nuevo con:
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
+### Despliegue separado: Vercel + Render
+
+En Vercel configure la variable de entorno `VITE_API_URL` con `https://rx-ccdx-page.onrender.com` y vuelva a desplegar el cliente.
+En Render configure `CORS_ORIGIN` con el dominio público exacto de Vercel, por ejemplo `https://su-proyecto.vercel.app`.
+Si usa un dominio personalizado, agregue también ese origen separado por comas. No incluya una barra `/` final.
+
 ### Crear la primera cuenta de Super Administrador
 
 Las cuentas se crean desde el panel de administración, pero la primera debe insertarse a mano.

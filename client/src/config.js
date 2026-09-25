@@ -1,5 +1,8 @@
 // Central configuration — all components must import API_URL from here
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+const API_URL_PRODUCCION = 'https://rx-ccdx-page.onrender.com';
+export const API_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.DEV ? 'http://localhost:3002' : API_URL_PRODUCCION
+);
 
 // Browser media tags cannot attach Authorization headers. The server accepts this
 // short-lived session token only for authenticated private files and disables
