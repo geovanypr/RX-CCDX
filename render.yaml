@@ -2,9 +2,8 @@ services:
   - type: web
     name: rx-ccdx-page
     runtime: node
-    rootDir: server
-    buildCommand: npm install
-    startCommand: node index.js
+    buildCommand: npm install --prefix server
+    startCommand: node server/index.js
     plan: free
     region: oregon
 
