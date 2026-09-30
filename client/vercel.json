@@ -1,7 +1,13 @@
 {
+  "crons": [
+    {
+      "path": "/api/keep-alive",
+      "schedule": "*/10 * * * *"
+    }
+  ],
   "rewrites": [
     {
-      "source": "/((?!assets/).*)",
+      "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
   ]
