@@ -1,0 +1,28 @@
+name: Keep Render Alive
+
+# Mantiene https://rx-ccdx.onrender.com despierto en plan Free (se suspende
+# tras 15 min sin tráfico). GitHub Actions es gratis en repos públicos y no
+# tiene el límite de "1 cron/día" del plan Hobby de Vercel.
+on:
+  schedule:
+    # Cada 10 minutos (mínimo efectivo real: ~5-15 min según carga de Actions)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # permite ejecutarlo manualmente desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping /api/health en Render
+        run: |
+          echo "Pinging https://rx-ccdx.onrender.com/api/health ..."
+          HTTP_CODE=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 30 \
+            -H "User-Agent: github-actions-keepalive/1.0" \
+            https://rx-ccdx.onrender.com/api/health || echo "000")
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/health.json 2>/dev/null || true
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Ping falló con código $HTTP_CODE"
+            exit 1
+          fi
