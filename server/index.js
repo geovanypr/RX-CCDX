@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const multer = require('multer');
 const db = require('./db');
+const bootstrapUsers = require('./bootstrap_users');
 const fsManager = require('./fs_manager');
 const wordGen = require('./word_generator');
 const archiverModule = require('archiver');
@@ -25,6 +26,7 @@ function createZipArchive() {
 
 const app = express();
 const server = http.createServer(app);
+bootstrapUsers(db);
 const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'] }
 });
