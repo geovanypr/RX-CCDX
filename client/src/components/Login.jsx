@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { getRememberChoice, getSavedUsername } from '../utils/sessionStore';
 import { enableSound } from '../utils/notificationSound';
 import Icon from './Icons';
 import { enforceLightMode } from '../utils/useTheme';
@@ -10,10 +11,12 @@ import { enforceLightMode } from '../utils/useTheme';
 enforceLightMode();
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(() => getSavedUsername());
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(() => getRememberChoice());
   const [loading, setLoading] = useState(false);
+  const [verificandoSesion, setVerificandoSesion] = useState(false);
   const [searchParams] = useSearchParams();
   const [error, setError] = useState(
     searchParams.get('sesion') === 'expirada'
@@ -21,7 +24,30 @@ const Login = () => {
       : ''
   );
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
+  const { user, loading: authLoading, login, logout } = useContext(AuthContext);
+
+  const irAInicio = (role) => {
+    navigate(role === 'RADIOLOGO' ? '/radiologo' : '/dashboard', { replace: true });
+  };
+
+  // Entrada directa: si ya hay sesión guardada, verificarla y entrar
+  // sin pedir credenciales de nuevo.
+  useEffect(() => {
+    if (authLoading || !user?.token) return;
+    setVerificandoSesion(true);
+    fetch(`${API_URL}/api/config`, {
+      headers: { 'Authorization': `Bearer ${user.token}` },
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Sesión inválida');
+        return res.json();
+      })
+      .then(() => irAInicio(user.role))
+      .catch(() => {
+        logout();
+        setVerificandoSesion(false);
+      });
+  }, [authLoading, user?.token]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -32,11 +58,11 @@ const Login = () => {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+        body: JSON.stringify({ username: username.trim(), password, remember }),
       });
       const data = await res.json();
       if (data.token) {
-        login(data);
+        login(data, remember);
         if (data.role === 'RADIOLOGO') navigate('/radiologo');
         else navigate('/dashboard');
       } else {
@@ -48,6 +74,21 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Mientras se verifica una sesión guardada, mostrar espera en vez del formulario.
+  if (!authLoading && user?.token && verificandoSesion && !error) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card" style={{ textAlign: 'center', padding: '48px 32px' }}>
+          <img className="brand-logo" src="/logo.png" alt="RX CCDX — Logo institucional" />
+          <h1 className="brand-name">RX CCDX</h1>
+          <p className="brand-tagline">
+            <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Abriendo su sesión, {user.username}...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-page">
@@ -109,6 +150,16 @@ const Login = () => {
               </button>
             </div>
           </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--color-text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: 'var(--color-secondary)', cursor: 'pointer' }}
+            />
+            Recuérdame en este dispositivo
+          </label>
 
           <button
             type="submit"

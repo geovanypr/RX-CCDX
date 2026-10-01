@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { instalarInterceptorSesion } from './utils/apiClient'
+import { readSession } from './utils/sessionStore'
 
 // Manejo centralizado del token y de las sesiones expiradas
 instalarInterceptorSesion()
@@ -13,7 +14,7 @@ instalarInterceptorSesion()
 // El modo claro es el default si no hay preferencia.
 ;(function applyThemeEarly() {
   try {
-    const userId = localStorage.getItem('rxccdx_id') || 'guest'
+    const userId = readSession()?.id || 'guest'
     const theme = localStorage.getItem(`rxccdx_theme_${userId}`)
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')

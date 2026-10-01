@@ -410,7 +410,9 @@ app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, label
     // Éxito: limpiar el bucket para que los logins válidos no acumulen
     // intentos y terminen bloqueados con 429.
     rateBuckets.delete(`login:${req.ip}:${username}`);
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
+    // "Recuérdame" activado → sesión de 30 días; si no, 12 horas.
+    const remember = req.body?.remember === true;
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: remember ? '30d' : '12h' });
     logAudit({ id: user.id, username: user.username, role: user.role }, 'LOGIN', 'Inicio de sesión exitoso');
     res.json({ token, role: user.role, username: user.username, id: user.id });
   } catch (e) {
