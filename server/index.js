@@ -63,7 +63,7 @@ app.use('/pacientes', authenticateDownload, (req, res, next) => {
   res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('Referrer-Policy', 'no-referrer');
   next();
-}, express.static(path.join(__dirname, 'data', 'pacientes')));
+}, express.static(fsManager.DATA_DIR));
 
 // --- Multer: file upload to study subfolder ---
 const storage = multer.diskStorage({
