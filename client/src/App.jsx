@@ -8,6 +8,7 @@ import RegisterUser from './components/RegisterUser';
 import RecoverPassword from './components/RecoverPassword';
 import Dashboard from './components/Dashboard';
 import RadiologistView from './components/RadiologistView';
+import SuperAdminPanel from './components/SuperAdminPanel';
 import AppErrorBoundary from './components/AppErrorBoundary';
 
 function App() {
@@ -34,6 +35,12 @@ function App() {
             <Route path="/radiologo" element={
               <ProtectedRoute allowedRoles={['RADIOLOGO', 'SUPER_ADMIN']}>
                 <RadiologistView />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                <SuperAdminPanel />
               </ProtectedRoute>
             } />
             

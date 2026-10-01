@@ -27,7 +27,9 @@ const Login = () => {
   const { user, loading: authLoading, login, logout } = useContext(AuthContext);
 
   const irAInicio = (role) => {
-    navigate(role === 'RADIOLOGO' ? '/radiologo' : '/dashboard', { replace: true });
+    if (role === 'SUPER_ADMIN') navigate('/admin', { replace: true });
+    else if (role === 'RADIOLOGO') navigate('/radiologo', { replace: true });
+    else navigate('/dashboard', { replace: true });
   };
 
   // Entrada directa: si ya hay sesión guardada, verificarla y entrar
@@ -63,7 +65,8 @@ const Login = () => {
       const data = await res.json();
       if (data.token) {
         login(data, remember);
-        if (data.role === 'RADIOLOGO') navigate('/radiologo');
+        if (data.role === 'SUPER_ADMIN') navigate('/admin');
+        else if (data.role === 'RADIOLOGO') navigate('/radiologo');
         else navigate('/dashboard');
       } else {
         setError(data.error || 'Credenciales inválidas');

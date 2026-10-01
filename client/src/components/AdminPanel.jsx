@@ -12,10 +12,10 @@ const ROLE_LABELS = {
   SUPER_ADMIN: 'Super Administrador',
 };
 
-const AdminPanel = ({ onClose }) => {
+const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
   const { user } = useContext(AuthContext);
   const { on, off } = useContext(NotificationContext);
-  const [tab, setTab] = useState('usuarios');
+  const [tab, setTab] = useState(initialTab);
   const [usuarios, setUsuarios] = useState([]);
   const [auditoria, setAuditoria] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
@@ -88,12 +88,16 @@ const AdminPanel = ({ onClose }) => {
     };
   }, [on, off, loadUsuarios, loadPlantillas]);
 
-  // Cerrar con tecla Escape
+  // Cerrar con tecla Escape (solo en modo modal)
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    if (embedded) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose?.(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, embedded]);
+
+  // Sincronizar la pestaña cuando el contenedor la controla (modo embedded)
+  useEffect(() => { if (embedded) setTab(initialTab); }, [embedded, initialTab]);
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
@@ -248,8 +252,12 @@ const AdminPanel = ({ onClose }) => {
 
   return (
     <>
-    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 3000 }}>
-      <div className="modal" style={{ maxWidth: 1000 }} onClick={e => e.stopPropagation()}>
+    <div
+      className={`modal-backdrop${embedded ? ' admin-embedded' : ''}`}
+      onClick={embedded ? undefined : onClose}
+      style={embedded ? { position: 'static', background: 'none', padding: 0, overflow: 'visible' } : { zIndex: 3000 }}
+    >
+      <div className="modal" style={embedded ? { maxWidth: '100%', margin: 0, boxShadow: 'none', maxHeight: 'none', overflow: 'visible' } : { maxWidth: 1000 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="flex-1">
             <h3 style={{ margin: 0, fontSize: 17, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -257,11 +265,14 @@ const AdminPanel = ({ onClose }) => {
             </h3>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>Modo Fantasma activo — tu cuenta es invisible para el resto del sistema</p>
           </div>
-          <button className="modal-close" onClick={onClose}>
-            <Icon name="close" size={18} />
-          </button>
+          {!embedded && (
+            <button className="modal-close" onClick={onClose}>
+              <Icon name="close" size={18} />
+            </button>
+          )}
         </div>
 
+        {!embedded && (
         <div className="tabs" style={{ padding: '0 24px' }}>
           {[
             { id: 'usuarios', icon: 'users', label: 'Usuarios' },
@@ -275,6 +286,7 @@ const AdminPanel = ({ onClose }) => {
             </button>
           ))}
         </div>
+        )}
 
         <div className="modal-body">
           {error && (
