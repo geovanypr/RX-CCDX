@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, lazy, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import RegisterModal from './RegisterModal';
 import AccountSettings from './AccountSettings';
 import CommunicationPanel from './CommunicationPanel';
@@ -9,12 +9,12 @@ import ConfirmDialog from './ConfirmDialog';
 import Icon from './Icons';
 import { regionDeTipo } from '../utils/catalogoRadiologia';
 import { FASES, FASE_META, ESTADO_COLORS, getEstadoColors } from '../utils/constants';
+import { vieneDeAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import { useTheme } from '../utils/useTheme';
 
 // Vistas pesadas que solo se necesitan cuando el usuario las abre: se cargan
 // bajo demanda para que el panel abra más rápido.
 const StudyDetailModal = lazy(() => import('./StudyDetailModal'));
-const AdminPanel = lazy(() => import('./AdminPanel'));
 const CommunicationHub = lazy(() => import('./CommunicationHub'));
 const CarpetasVirtuales = lazy(() => import('./CarpetasVirtuales'));
 const ReportesView = lazy(() => import('./ReportesView'));
@@ -47,7 +47,6 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [registrationPatient, setRegistrationPatient] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isCommunicationOpen, setIsCommunicationOpen] = useState(false);
   const [selectedEstudio, setSelectedEstudio] = useState(null);
   const [detailModalEstudio, setDetailModalEstudio] = useState(null);
@@ -78,6 +77,19 @@ const Dashboard = () => {
   const [dismissedPendingCount, setDismissedPendingCount] = useState(0);
   const searchRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  // Vista en modo supervisión: el superadmin entró desde su portal y puede volver.
+  const esVistaAdmin = user.role === 'SUPER_ADMIN' && vieneDeAdmin('dashboard', location.state);
+
+  // Deep-link desde el portal del superadmin (bandeja o vista específica).
+  useEffect(() => {
+    const estadoPedido = location.state?.fase;
+    const vistaPedida = location.state?.view;
+    if (estadoPedido && FASES.includes(estadoPedido)) setActiveFase(estadoPedido);
+    if (vistaPedida && ['placas', 'pacientes', 'carpetas', 'reportes'].includes(vistaPedida)) setView(vistaPedida);
+    // Solo se aplica al entrar; no se re-ejecuta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { logout, user } = useContext(AuthContext);
   const { pendingEncargado, setPendingEncargado, unreadMessages, setUnreadMessages, on, off, fetchPendingCounts, addNotification } = useContext(NotificationContext);
   const { isDark, toggleTheme } = useTheme(user?.id);
@@ -441,8 +453,8 @@ const Dashboard = () => {
             {unreadMessages > 0 && <span className="nav-badge">{unreadMessages}</span>}
           </button>
           {isSuperAdmin && (
-            <button className="btn" onClick={() => setIsAdminOpen(true)} style={{ gap: 8 }}>
-              <Icon name="shield" size={14} color="#cbd5e1" /> Panel de Administración
+            <button className="btn" onClick={() => { limpiarOrigenAdmin(); navigate('/admin'); }} style={{ gap: 8 }}>
+              <Icon name="shield" size={14} color="#cbd5e1" /> Portal SuperAdmin
             </button>
           )}
           <button className="btn" onClick={() => setIsSettingsOpen(true)} style={{ gap: 8 }}>
@@ -459,6 +471,16 @@ const Dashboard = () => {
 
       {/* ============ Main ============ */}
       <div className="main-content">
+        {/* Modo supervisión: solo visible para el superadmin que entró desde su portal */}
+        {esVistaAdmin && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'linear-gradient(90deg, #2e1065, #4c1d95)', color: '#fff', borderRadius: 12, padding: '9px 14px', marginBottom: 12 }}>
+            <Icon name="shield" size={15} color="#e9d5ff" />
+            <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>Modo supervisión — ves la bandeja de Encargada como Super Administrador</span>
+            <button className="btn btn-sm" onClick={() => { limpiarOrigenAdmin(); navigate('/admin'); }} style={{ background: '#fff', color: '#4c1d95', fontWeight: 800, gap: 5 }}>
+              ← Volver al Portal SuperAdmin
+            </button>
+          </div>
+        )}
         {/* Topbar */}
         <header className="topbar">
           <div className="flex-1">
@@ -1221,7 +1243,6 @@ const Dashboard = () => {
       )}
       {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} />}
       <Suspense fallback={null}>
-        {isAdminOpen && <AdminPanel onClose={() => setIsAdminOpen(false)} />}
         {isCommunicationOpen && <CommunicationHub onClose={() => setIsCommunicationOpen(false)} />}
         {detailModalEstudio && (
           <StudyDetailModal

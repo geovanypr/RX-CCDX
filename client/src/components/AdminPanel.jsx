@@ -28,6 +28,8 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
 
   const [newUser, setNewUser] = useState({ username: '', password: '', role: 'RADIOLOGO', pregunta_seguridad: '¿Cuál fue tu primera mascota?', respuesta_seguridad: '' });
   const [resetTarget, setResetTarget] = useState(null);
+  const [userBusqueda, setUserBusqueda] = useState('');
+  const [userFiltroRol, setUserFiltroRol] = useState('TODOS');
   const [resetPassword, setResetPassword] = useState('');
   const [editTarget, setEditTarget] = useState(null);
   const [editForm, setEditForm] = useState({ username: '', role: '' });
@@ -250,6 +252,14 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
   // Acciones distintas registradas (acumuladas, para que el filtro no se encoja)
   const accionesDistintas = [...accionesSet].sort();
 
+  // Usuarios filtrados por texto y rol
+  const usuariosFiltrados = usuarios.filter(u => {
+    const q = userBusqueda.trim().toLowerCase();
+    if (q && !String(u.username || '').toLowerCase().includes(q)) return false;
+    if (userFiltroRol !== 'TODOS' && u.role !== userFiltroRol) return false;
+    return true;
+  });
+
   return (
     <>
     <div
@@ -331,8 +341,23 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
               </form>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {usuarios.length === 0 && <p className="text-muted" style={{ fontSize: 13 }}>No hay usuarios.</p>}
-                {usuarios.map(u => (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    className="input"
+                    placeholder="Buscar usuario..."
+                    value={userBusqueda}
+                    onChange={e => setUserBusqueda(e.target.value)}
+                    style={{ flex: 2 }}
+                  />
+                  <select className="input" value={userFiltroRol} onChange={e => setUserFiltroRol(e.target.value)} style={{ flex: 1 }}>
+                    <option value="TODOS">Todos los roles</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                    <option value="ENCARGADO">Encargado</option>
+                    <option value="RADIOLOGO">Radiólogo</option>
+                  </select>
+                </div>
+                {usuariosFiltrados.length === 0 && <p className="text-muted" style={{ fontSize: 13 }}>{usuarios.length === 0 ? 'No hay usuarios.' : 'Sin coincidencias.'}</p>}
+                {usuariosFiltrados.map(u => (
                   <div key={u.id} className="card-flat" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', margin: 0 }}>
                     <div style={{
                       width: 36, height: 36, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',

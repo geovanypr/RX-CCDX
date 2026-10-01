@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { marcarOrigenAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { API_URL } from '../config';
@@ -34,6 +35,19 @@ const SuperAdminPanel = () => {
   const { on, off, pendingRadiologo, pendingEncargado } = useContext(NotificationContext);
   const { isDark, toggleTheme } = useTheme(user?.id);
   const navigate = useNavigate();
+  // Entrar a una vista operativa marcando el origen: solo así aparece el
+  // botón "Volver al Portal SuperAdmin" dentro de esa vista.
+  const verComoEncargada = (fase, view) => {
+    marcarOrigenAdmin('dashboard');
+    const state = { fromAdmin: true };
+    if (fase) { state.fase = fase; state.view = view || 'placas'; }
+    else if (view) { state.view = view; }
+    navigate('/dashboard', { state });
+  };
+  const verComoRadiologo = () => {
+    marcarOrigenAdmin('radiologo');
+    navigate('/radiologo', { state: { fromAdmin: true } });
+  };
   const [seccion, setSeccion] = useState('resumen');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [stats, setStats] = useState(null);
@@ -41,6 +55,7 @@ const SuperAdminPanel = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [totalPacientes, setTotalPacientes] = useState(null);
   const [actividad, setActividad] = useState([]);
+  const [numPlantillas, setNumPlantillas] = useState(null);
   const [apiOk, setApiOk] = useState(null);
   const [cargando, setCargando] = useState(true);
 
@@ -54,13 +69,15 @@ const SuperAdminPanel = () => {
       fetch(`${API_URL}/api/usuarios`, { headers }).then(r => r.json()).catch(() => null),
       fetch(`${API_URL}/api/pacientes/buscar?q=&limit=5`, { headers }).then(r => r.json()).catch(() => null),
       fetch(`${API_URL}/api/auditoria?limit=8`, { headers }).then(r => r.json()).catch(() => null),
+      fetch(`${API_URL}/api/plantillas`, { headers }).then(r => r.json()).catch(() => null),
       fetch(`${API_URL}/api/health`).then(r => r.json()).then(() => true).catch(() => false),
-    ]).then(([st, pe, us, pac, aud, health]) => {
+    ]).then(([st, pe, us, pac, aud, tpl, health]) => {
       if (st && typeof st === 'object') setStats(st);
       if (pe && typeof pe === 'object') setPorEstado(pe);
       if (Array.isArray(us)) setUsuarios(us);
       if (pac && typeof pac.total === 'number') setTotalPacientes(pac.total);
       if (Array.isArray(aud)) setActividad(aud);
+      if (Array.isArray(tpl)) setNumPlantillas(tpl.length);
       setApiOk(health);
     }).finally(() => setCargando(false));
   }, [user.token]);
@@ -78,7 +95,7 @@ const SuperAdminPanel = () => {
     return () => { eventos.forEach(ev => off(ev, recargar)); };
   }, [on, off, cargarResumen]);
 
-  const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
+  const handleLogout = () => { limpiarOrigenAdmin(); logout(); navigate('/login', { replace: true }); };
 
   const usuariosActivos = usuarios.filter(u => u.activo === 1).length;
   const encargados = usuarios.filter(u => u.role === 'ENCARGADO').length;
@@ -86,14 +103,14 @@ const SuperAdminPanel = () => {
   const totalPorEstado = porEstado ? Object.values(porEstado).reduce((a, b) => a + (b || 0), 0) : 0;
 
   const tarjetas = [
-    { label: 'Estudios este mes', valor: stats?.totalMes, icon: 'calendar', color: '#1a66b3', bg: '#eff6ff' },
-    { label: 'Estudios en total', valor: stats?.totalAll, icon: 'inbox', color: '#1a66b3', bg: '#eff6ff' },
-    { label: 'Pendientes de flujo', valor: stats?.pendientes, icon: 'clock', color: '#b45309', bg: '#fffbeb' },
-    { label: 'Urgentes sin entregar', valor: stats?.urgentes, icon: 'warning', color: '#dc2626', bg: '#fef2f2' },
-    { label: 'Vencidos', valor: stats?.vencidos, icon: 'calendar', color: '#dc2626', bg: '#fef2f2' },
-    { label: 'Pacientes', valor: totalPacientes, icon: 'users', color: '#0d9488', bg: '#f0fdfa' },
-    { label: 'Usuarios activos', valor: usuarios.length ? `${usuariosActivos}/${usuarios.length}` : null, icon: 'user', color: '#7e22ce', bg: '#faf5ff' },
-    { label: 'Entregados', valor: stats?.entregados, icon: 'check', color: '#15803d', bg: '#f0fdf4' },
+    { label: 'Estudios este mes', valor: stats?.totalMes, icon: 'calendar', color: '#1a66b3', bg: '#eff6ff', accion: () => verComoEncargada('Recibida') },
+    { label: 'Estudios en total', valor: stats?.totalAll, icon: 'inbox', color: '#1a66b3', bg: '#eff6ff', accion: () => verComoEncargada('Recibida') },
+    { label: 'Pendientes de flujo', valor: stats?.pendientes, icon: 'clock', color: '#b45309', bg: '#fffbeb', accion: () => verComoEncargada('Recibida') },
+    { label: 'Urgentes sin entregar', valor: stats?.urgentes, icon: 'warning', color: '#dc2626', bg: '#fef2f2', accion: () => verComoEncargada('Enviada al radiólogo') },
+    { label: 'Vencidos', valor: stats?.vencidos, icon: 'calendar', color: '#dc2626', bg: '#fef2f2', accion: () => verComoEncargada('Diagnóstico recibido') },
+    { label: 'Pacientes', valor: totalPacientes, icon: 'users', color: '#0d9488', bg: '#f0fdfa', accion: () => verComoEncargada(null, 'pacientes') },
+    { label: 'Usuarios activos', valor: usuarios.length ? `${usuariosActivos}/${usuarios.length}` : null, icon: 'user', color: '#7e22ce', bg: '#faf5ff', accion: () => setSeccion('usuarios') },
+    { label: 'Entregados', valor: stats?.entregados, icon: 'check', color: '#15803d', bg: '#f0fdf4', accion: () => verComoEncargada('Entregado') },
   ];
 
   const itemNav = (id, icon, label, badge) => (
@@ -141,7 +158,7 @@ const SuperAdminPanel = () => {
 
         <p style={{ margin: '12px 6px 4px', fontSize: 10.5, fontWeight: 700, letterSpacing: 0.8, color: 'rgba(255,255,255,0.45)' }}>SUPERVISIÓN OPERATIVA</p>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => verComoEncargada()}
           style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'transparent', color: 'rgba(255,255,255,0.72)', fontSize: 13.5, fontWeight: 500, textAlign: 'left' }}
         >
           <Icon name="inbox" size={15} color="rgba(255,255,255,0.6)" />
@@ -149,7 +166,7 @@ const SuperAdminPanel = () => {
           {pendingEncargado > 0 && <span style={{ background: '#dc2626', color: '#fff', fontSize: 10.5, fontWeight: 800, borderRadius: 999, padding: '1px 7px' }}>{pendingEncargado}</span>}
         </button>
         <button
-          onClick={() => navigate('/radiologo')}
+          onClick={verComoRadiologo}
           style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'transparent', color: 'rgba(255,255,255,0.72)', fontSize: 13.5, fontWeight: 500, textAlign: 'left' }}
         >
           <Icon name="microscope" size={15} color="rgba(255,255,255,0.6)" />
@@ -199,7 +216,13 @@ const SuperAdminPanel = () => {
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
                   {tarjetas.map(t => (
-                    <div key={t.label} className="card-flat" style={{ padding: '14px 16px', margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <button
+                      key={t.label}
+                      onClick={t.accion}
+                      title="Ver detalle"
+                      className="card-flat"
+                      style={{ padding: '14px 16px', margin: 0, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1px solid transparent', textAlign: 'left', background: 'var(--color-surface)' }}
+                    >
                       <div style={{ width: 38, height: 38, borderRadius: 11, background: t.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Icon name={t.icon} size={17} color={t.color} />
                       </div>
@@ -207,25 +230,42 @@ const SuperAdminPanel = () => {
                         <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--color-text)' }}>{t.valor ?? '—'}</p>
                         <p style={{ margin: 0, fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4 }}>{t.label}</p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
+                {(stats?.vencidos > 0 || stats?.urgentes > 0) && (
+                  <div className="alert alert-danger" style={{ marginBottom: 16 }}>
+                    <span>⚠️</span>
+                    <span>
+                      {stats?.urgentes > 0 && <><strong>{stats.urgentes}</strong> urgente(s) sin entregar. </>}
+                      {stats?.vencidos > 0 && <><strong>{stats.vencidos}</strong> estudio(s) con entrega vencida. </>}
+                      <button onClick={() => verComoEncargada('Diagnóstico recibido')} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer' }}>
+                        Revisar en bandeja de Encargada →
+                      </button>
+                    </span>
+                  </div>
+                )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12, marginBottom: 16 }}>
                   <div className="card-flat" style={{ padding: '16px 18px', margin: 0 }}>
-                    <p className="section-title" style={{ marginBottom: 12 }}>Estudios por estado</p>
+                    <p className="section-title" style={{ marginBottom: 12 }}>Estudios por estado <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--color-text-muted)' }}>(clic para ver bandeja)</span></p>
                     {!porEstado || totalPorEstado === 0 ? (
                       <p className="text-muted" style={{ fontSize: 13 }}>Aún no hay estudios registrados.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {Object.entries(porEstado).map(([estado, total]) => (
-                          <div key={estado} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <button
+                            key={estado}
+                            onClick={() => verComoEncargada(estado)}
+                            title={`Ver bandeja: ${estado}`}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', textAlign: 'left' }}
+                          >
                             <span style={{ flex: '0 0 220px', fontSize: 12.5, color: 'var(--color-text-secondary)' }}>{estado}</span>
                             <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'var(--color-border, #e5e7eb)', overflow: 'hidden' }}>
                               <div style={{ width: `${totalPorEstado ? Math.round((total / totalPorEstado) * 100) : 0}%`, height: '100%', borderRadius: 999, background: '#7e22ce' }} />
                             </div>
                             <strong style={{ flex: '0 0 30px', textAlign: 'right', fontSize: 13, color: 'var(--color-text)' }}>{total}</strong>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -237,10 +277,10 @@ const SuperAdminPanel = () => {
                   <div className="card-flat" style={{ padding: '16px 18px', margin: 0 }}>
                     <p className="section-title" style={{ marginBottom: 12 }}>Supervisión operativa</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <button className="btn btn-primary" onClick={() => navigate('/dashboard')} style={{ justifyContent: 'flex-start', gap: 8 }}>
+                      <button className="btn btn-primary" onClick={() => verComoEncargada()} style={{ justifyContent: 'flex-start', gap: 8 }}>
                         <Icon name="inbox" size={15} color="#fff" /> Ver bandeja de Encargada
                       </button>
-                      <button className="btn btn-primary" onClick={() => navigate('/radiologo')} style={{ justifyContent: 'flex-start', gap: 8 }}>
+                      <button className="btn btn-primary" onClick={verComoRadiologo} style={{ justifyContent: 'flex-start', gap: 8 }}>
                         <Icon name="microscope" size={15} color="#fff" /> Ver estación de Radiólogo
                       </button>
                       <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
@@ -251,7 +291,10 @@ const SuperAdminPanel = () => {
                 </div>
 
                 <div className="card-flat" style={{ padding: '16px 18px', margin: 0 }}>
-                  <p className="section-title" style={{ marginBottom: 12 }}>Actividad reciente</p>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                    <p className="section-title" style={{ margin: 0, flex: 1 }}>Actividad reciente</p>
+                    <button className="btn btn-ghost btn-xs" onClick={() => setSeccion('auditoria')}>Ver auditoría completa →</button>
+                  </div>
                   {actividad.length === 0 ? (
                     <p className="text-muted" style={{ fontSize: 13 }}>Sin actividad registrada.</p>
                   ) : (
@@ -266,6 +309,27 @@ const SuperAdminPanel = () => {
                       ))}
                     </div>
                   )}
+                </div>
+                <div className="card-flat" style={{ padding: '16px 18px', margin: '0 0 16px' }}>
+                  <p className="section-title" style={{ marginBottom: 12 }}>Sistema</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12.5 }}>
+                    <div>
+                      <p style={{ margin: '0 0 2px', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>API (Render)</p>
+                      <p className="mono" style={{ margin: 0, color: 'var(--color-text)', wordBreak: 'break-all' }}>{API_URL}</p>
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 2px', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>App web</p>
+                      <p className="mono" style={{ margin: 0, color: 'var(--color-text)', wordBreak: 'break-all' }}>{window.location.origin}</p>
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 2px', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Plantillas</p>
+                      <p style={{ margin: 0, color: 'var(--color-text)', fontWeight: 700 }}>{numPlantillas ?? '—'} <button onClick={() => setSeccion('plantillas')} style={{ background: 'none', border: 'none', padding: 0, color: '#7e22ce', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>gestionar →</button></p>
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 2px', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Anti-suspensión</p>
+                      <p style={{ margin: 0, color: 'var(--color-text)' }}>GitHub Actions cada 10 min → /api/health</p>
+                    </div>
+                  </div>
                 </div>
               </>
             )}

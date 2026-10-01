@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, lazy } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { vieneDeAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import AccountSettings from './AccountSettings';
 import CommunicationPanel from './CommunicationPanel';
 import RegisterModal from './RegisterModal';
@@ -59,6 +61,10 @@ const RadiologistView = () => {
   const [notaDevolucion, setNotaDevolucion] = useState('');
   const [submittingDevolver, setSubmittingDevolver] = useState(false);
   const { logout, user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Vista en modo supervisión: el superadmin entró desde su portal y puede volver.
+  const esVistaAdmin = user.role === 'SUPER_ADMIN' && vieneDeAdmin('radiologo', location.state);
   const { pendingRadiologo, setPendingRadiologo, unreadMessages, setUnreadMessages, on, off, fetchPendingCounts, addNotification } = useContext(NotificationContext);
   const { isDark, toggleTheme } = useTheme(user?.id);
   const textareaRef = useRef(null);
@@ -499,6 +505,17 @@ const RadiologistView = () => {
           </span>
         )}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Solo para el superadmin que entró desde su portal */}
+          {esVistaAdmin && (
+            <button
+              className="btn btn-sm"
+              onClick={() => { limpiarOrigenAdmin(); navigate('/admin'); }}
+              style={{ background: '#e9d5ff', color: '#4c1d95', gap: 5, fontWeight: 800 }}
+              title="Volver al Portal SuperAdmin"
+            >
+              ← Portal SuperAdmin
+            </button>
+          )}
           <NotificationCenter variant="dark" />
           {/* Toggle tema — en el header oscuro del radiólogo */}
           <button

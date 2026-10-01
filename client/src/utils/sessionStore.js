@@ -6,7 +6,7 @@
 // dónde buscar la sesión al arrancar. Las sesiones antiguas (solo
 // localStorage, sin bandera) se tratan como "recordadas" por compatibilidad.
 
-const CLAVES_SESION = ['rxccdx_token', 'rxccdx_role', 'rxccdx_username', 'rxccdx_id'];
+const CLAVES_SESION = ['rxccdx_token', 'rxccdx_role', 'rxccdx_username', 'rxccdx_id', 'rxccdx_admin_origen'];
 const CLAVE_REMEMBER = 'rxccdx_remember';
 const CLAVE_SAVED_USERNAME = 'rxccdx_saved_username';
 
