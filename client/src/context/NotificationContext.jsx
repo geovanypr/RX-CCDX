@@ -135,14 +135,31 @@ export const NotificationProvider = ({ children }) => {
       notificarListeners('archivo:subido', data);
     });
 
+    socket.on('placas:enviadas', (data) => {
+      addNotification('Placas enviadas', `${data.radiografias_count || data.radiografias?.length || ''} placa(s) en ${data.registro_id}`, 'enviado');
+      notificarListeners('placas:enviadas', data);
+    });
+
+    socket.on('estudio:actualizado', (data) => {
+      notificarListeners('estudio:actualizado', data);
+    });
+
+    socket.on('estudio:eliminado', (data) => {
+      notificarListeners('estudio:eliminado', data);
+    });
+
     socket.on('connect_error', (err) => {
       console.warn('[RX CCDX] Error de conexión:', err.message);
     });
 
-    // Reconectar: resincronizar contadores cuando el socket vuelve tras una desconexión
-    socket.on('reconnect', () => {
-      console.info('[RX CCDX] Socket reconectado — resincronizando contadores');
+    // Reconectar: resincronizar contadores Y listas cuando el socket vuelve
+    // tras una desconexión (p. ej. Render en plan Free se reinicia).
+    // Nota: en socket.io v4 'reconnect' se emite en el Manager (socket.io),
+    // no en el Socket, por eso se escucha ahí.
+    socket.io.on('reconnect', () => {
+      console.info('[RX CCDX] Socket reconectado — resincronizando');
       fetchPendingCounts();
+      notificarListeners('sesion:resincronizada', {});
     });
 
     return () => {

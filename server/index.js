@@ -913,6 +913,9 @@ app.post('/api/registrar', authenticateToken, (req, res) => {
     fsManager.getEstudioFolderPath(result.patient.registro_id, result.patient.nombre, result.estudioFolderName);
     logAudit(req.user, 'ESTUDIO_REGISTRADO', `${registro}: ${study.tipo_estudio}${result.urgente ? ' (urgente)' : ''}`, result.estudioId);
     emitToRole('ENCARGADO', 'estudio:nuevo', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
+    // La bandeja del radiólogo incluye 'Recibida', así que también se le avisa
+    // en vivo para que el estudio aparezca sin refrescar.
+    emitToRole('RADIOLOGO', 'estudio:nuevo', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
     if (req.user.role === 'RADIOLOGO') {
       emitToRole('RADIOLOGO', 'estudio:enviado', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
     }
@@ -1046,14 +1049,22 @@ app.put('/api/estudios/:id/estado', authenticateToken, requireRole('ENCARGADO'),
     logAudit(req.user, 'ESTADO_CAMBIADO', `${estudioInfo.registro_id}: ${estudioInfo.estado} → ${estado}`, estudioInfo.id);
 
     if (estudioInfo && estudioInfo.estado !== estado && estado === 'Enviada al radiólogo') {
-      const envioCount = db.prepare("SELECT COUNT(*) as c FROM envios WHERE estudio_id = ? AND tipo = 'envio_radiologo'").get(estudioInfo.id).c;
-      const folderPath = getEstudioFolderPath(estudioInfo);
-      const archivos = fs.readdirSync(folderPath).filter(name => !name.startsWith('.'));
-      const radiografias = archivos.filter(name => /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(name));
-      db.prepare(
-        `INSERT INTO envios (estudio_id, numero_intento, tipo, estado, contenido, sender_id, sender_username, sender_role, fecha_limite)
-         VALUES (?, ?, 'envio_radiologo', 'enviado', ?, ?, ?, ?, ?)`
-      ).run(estudioInfo.id, envioCount + 1, 'Radiografías adjuntas: ' + radiografias.length + '. ' + (estudioInfo.notas_clinicas || 'Estudio enviado para lectura radiológica'), req.user.id, req.user.username, req.user.role, estudioInfo.fecha_entrega_estimada);
+      // El registro del envío es auxiliar: si falla (disco, BD), el cambio de
+      // estado YA quedó guardado y el aviso en tiempo real debe salir igual.
+      let archivos = [];
+      let radiografias = [];
+      try {
+        const envioCount = db.prepare("SELECT COUNT(*) as c FROM envios WHERE estudio_id = ? AND tipo = 'envio_radiologo'").get(estudioInfo.id).c;
+        const folderPath = getEstudioFolderPath(estudioInfo);
+        archivos = fs.readdirSync(folderPath).filter(name => !name.startsWith('.'));
+        radiografias = archivos.filter(name => /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(name));
+        db.prepare(
+          `INSERT INTO envios (estudio_id, numero_intento, tipo, estado, contenido, sender_id, sender_username, sender_role, fecha_limite)
+           VALUES (?, ?, 'envio_radiologo', 'enviado', ?, ?, ?, ?, ?)`
+        ).run(estudioInfo.id, envioCount + 1, 'Radiografías adjuntas: ' + radiografias.length + '. ' + (estudioInfo.notas_clinicas || 'Estudio enviado para lectura radiológica'), req.user.id, req.user.username, req.user.role, estudioInfo.fecha_entrega_estimada);
+      } catch (e) {
+        console.error('[Enviar a radiólogo] No se pudo registrar el envío (el estado ya fue actualizado):', e.message);
+      }
       emitToRole('RADIOLOGO', 'estudio:enviado', {
         id: estudioInfo.id,
         registro_id: estudioInfo.registro_id,

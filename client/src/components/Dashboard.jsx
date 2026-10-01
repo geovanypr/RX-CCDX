@@ -174,10 +174,12 @@ const Dashboard = () => {
     const onDiagnostico = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); fetchPendingCounts(); fetchTopEstudios(); };
     const onNuevo      = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); fetchReportes(); fetchEntregas(); fetchTopEstudios(); };
     const onDevuelto   = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); };
+    const onResincronizar = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); fetchPendingCounts(); };
     on('diagnostico:recibido', onDiagnostico);
     on('estudio:nuevo', onNuevo);
     on('estudio:devuelto', onDevuelto);
-    return () => { off('diagnostico:recibido', onDiagnostico); off('estudio:nuevo', onNuevo); off('estudio:devuelto', onDevuelto); };
+    on('sesion:resincronizada', onResincronizar);
+    return () => { off('diagnostico:recibido', onDiagnostico); off('estudio:nuevo', onNuevo); off('estudio:devuelto', onDevuelto); off('sesion:resincronizada', onResincronizar); };
   }, [on, off, fetchEstudios, fetchStats, fetchAllCounts, fetchPendingCounts, fetchReportes, fetchEntregas, fetchTopEstudios]);
 
   useEffect(() => {

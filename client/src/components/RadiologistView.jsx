@@ -62,6 +62,8 @@ const RadiologistView = () => {
   const { pendingRadiologo, setPendingRadiologo, unreadMessages, setUnreadMessages, on, off, fetchPendingCounts, addNotification } = useContext(NotificationContext);
   const { isDark, toggleTheme } = useTheme(user?.id);
   const textareaRef = useRef(null);
+  // Espejo del estudio seleccionado para los listeners del socket (ver abajo).
+  const selectedEstudioRef = useRef(null);
 
   const headers = { Authorization: `Bearer ${user.token}` };
 
@@ -144,13 +146,49 @@ const RadiologistView = () => {
   }, [archivos, selectedImage]);
 
   useEffect(() => {
-    on('estudio:enviado', () => fetchEstudios());
-    on('estudio:devuelto', () => fetchEstudios());
-    on('archivo:subido', (data) => {
-      if (selectedEstudio && data.estudio_id === selectedEstudio.id) loadArchivos(selectedEstudio);
-    });
-    return () => { off('estudio:enviado'); off('estudio:devuelto'); off('archivo:subido'); };
-  }, [on, off, fetchEstudios, selectedEstudio, loadArchivos]);
+    // Espejo del estudio seleccionado para los listeners del socket: evita
+    // re-suscribirse (y borrar listeners de otros componentes) cada vez que
+    // el usuario selecciona otro estudio.
+    selectedEstudioRef.current = selectedEstudio;
+  }, [selectedEstudio]);
+
+  useEffect(() => {
+    // Callbacks nombrados para poder retirarlos sin afectar a otros
+    // componentes suscritos a los mismos eventos.
+    const onEstudioCambio = () => fetchEstudios();
+    const onArchivo = (data) => {
+      const actual = selectedEstudioRef.current;
+      if (actual && data.estudio_id === actual.id) loadArchivos(actual);
+    };
+    const onPlacas = (data) => {
+      fetchEstudios();
+      const actual = selectedEstudioRef.current;
+      if (actual && data.estudio_id === actual.id) loadArchivos(actual);
+    };
+    const onResincronizar = () => {
+      fetchEstudios();
+      const actual = selectedEstudioRef.current;
+      if (actual) loadArchivos(actual);
+    };
+    on('estudio:enviado', onEstudioCambio);
+    on('estudio:nuevo', onEstudioCambio);
+    on('estudio:devuelto', onEstudioCambio);
+    on('estudio:actualizado', onEstudioCambio);
+    on('estudio:eliminado', onEstudioCambio);
+    on('placas:enviadas', onPlacas);
+    on('archivo:subido', onArchivo);
+    on('sesion:resincronizada', onResincronizar);
+    return () => {
+      off('estudio:enviado', onEstudioCambio);
+      off('estudio:nuevo', onEstudioCambio);
+      off('estudio:devuelto', onEstudioCambio);
+      off('estudio:actualizado', onEstudioCambio);
+      off('estudio:eliminado', onEstudioCambio);
+      off('placas:enviadas', onPlacas);
+      off('archivo:subido', onArchivo);
+      off('sesion:resincronizada', onResincronizar);
+    };
+  }, [on, off, fetchEstudios, loadArchivos]);
 
   useEffect(() => {
     if (selectedEstudio) {
