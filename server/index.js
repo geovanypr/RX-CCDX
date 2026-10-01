@@ -1267,19 +1267,17 @@ app.get('/api/estudios/:id/archivos', authenticateToken, (req, res) => {
   try {
     const estudio = getEstudioInfo(req.params.id);
     ensureStudyAccess(req, estudio);
-    let folderPath, urlBase;
+    let folderPath;
     if (estudio.estudio_folder_name) {
       folderPath = fsManager.getEstudioFolderPath(estudio.registro_id, estudio.nombre, estudio.estudio_folder_name);
-      urlBase = `/pacientes/${encodeURIComponent(fsManager.getFolderName(estudio.registro_id, estudio.nombre))}/${encodeURIComponent(estudio.estudio_folder_name)}`;
     } else {
       folderPath = fsManager.getPatientFolderPath(estudio.registro_id, estudio.nombre);
-      urlBase = `/pacientes/${encodeURIComponent(fsManager.getFolderName(estudio.registro_id, estudio.nombre))}`;
     }
     const files = fs.readdirSync(folderPath)
       .filter(f => fs.statSync(path.join(folderPath, f)).isFile())
       .map(f => ({
         name: f,
-        url: `${urlBase}/${encodeURIComponent(f)}`,
+        url: `/api/estudios/${estudio.id}/archivos/${encodeURIComponent(f)}/view`,
         isImage: /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(f),
         isDoc: /\.(docx|doc|pdf|txt)$/i.test(f),
         size: (() => { try { return fs.statSync(path.join(folderPath, f)).size; } catch { return 0; } })(),
@@ -1287,6 +1285,24 @@ app.get('/api/estudios/:id/archivos', authenticateToken, (req, res) => {
     res.json(files);
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// Visualización autenticada de un archivo. Las etiquetas <img> no pueden
+// enviar el header Authorization, por eso el cliente añade el token a la URL.
+app.get('/api/estudios/:id/archivos/:filename/view', authenticateDownload, (req, res) => {
+  try {
+    const estudio = getEstudioInfo(req.params.id);
+    ensureStudyAccess(req, estudio);
+    const folderPath = getEstudioFolderPath(estudio);
+    const filePath = path.resolve(folderPath, req.params.filename);
+    if (!filePath.startsWith(path.resolve(folderPath) + path.sep)) return res.status(403).json({ error: 'Acceso denegado' });
+    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return res.status(404).json({ error: 'Archivo no encontrado' });
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.sendFile(filePath);
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
   }
 });
 
