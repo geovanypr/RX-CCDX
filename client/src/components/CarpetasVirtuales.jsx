@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useContext, useCallback, Suspense, lazy, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, lazy, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
 import { sexoLabel } from '../utils/format';
@@ -13,6 +14,7 @@ const InformeViewer = lazy(() => import('./InformeViewer'));
 
 const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
   const { user } = useContext(AuthContext);
+  const { on, off } = useContext(NotificationContext);
   const [carpetas, setCarpetas] = useState([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -74,6 +76,55 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
   }, [page, q, user.token]);
 
   useEffect(() => { fetchCarpetas(); }, [fetchCarpetas]);
+
+  // Actualización en vivo: recargar la lista (y el detalle abierto) cuando
+  // otro usuario crea, edita o elimina pacientes, estudios o archivos.
+  const selectedRef = useRef(null);
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  useEffect(() => {
+    const recargarLista = () => fetchCarpetas();
+    const recargarDetalle = () => {
+      fetchCarpetas();
+      const actual = selectedRef.current;
+      if (actual) openDetalle(actual);
+    };
+    // Si eliminan el paciente que se está viendo, cerrar su detalle.
+    const onPacienteEliminado = (data) => {
+      fetchCarpetas();
+      const actual = selectedRef.current;
+      if (actual && Array.isArray(data?.ids) && data.ids.includes(actual.id)) {
+        setSelected(null);
+        setDetalle(null);
+      } else if (actual) {
+        openDetalle(actual);
+      }
+    };
+    on('paciente:nuevo', recargarLista);
+    on('paciente:actualizado', recargarDetalle);
+    on('paciente:eliminado', onPacienteEliminado);
+    on('estudio:nuevo', recargarDetalle);
+    on('estudio:actualizado', recargarDetalle);
+    on('estudio:enviado', recargarDetalle);
+    on('estudio:devuelto', recargarDetalle);
+    on('estudio:eliminado', recargarDetalle);
+    on('archivo:subido', recargarDetalle);
+    on('archivo:eliminado', recargarDetalle);
+    on('sesion:resincronizada', recargarDetalle);
+    return () => {
+      off('paciente:nuevo', recargarLista);
+      off('paciente:actualizado', recargarDetalle);
+      off('paciente:eliminado', onPacienteEliminado);
+      off('estudio:nuevo', recargarDetalle);
+      off('estudio:actualizado', recargarDetalle);
+      off('estudio:enviado', recargarDetalle);
+      off('estudio:devuelto', recargarDetalle);
+      off('estudio:eliminado', recargarDetalle);
+      off('archivo:subido', recargarDetalle);
+      off('archivo:eliminado', recargarDetalle);
+      off('sesion:resincronizada', recargarDetalle);
+    };
+  }, [on, off, fetchCarpetas]);
 
   const openDetalle = (paciente) => {
     setSelected(paciente);

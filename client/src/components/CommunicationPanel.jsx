@@ -146,6 +146,9 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
     const onPlacas = (data) => {
       if (data.estudio_id === estudio.id) { loadArchivos(); addNotification('📥 Placas recibidas', `${data.sender_username || 'El otro profesional'} envió ${data.radiografias_count || 0} radiografía(s).`, 'success'); }
     };
+    const onArchivoEliminado = (data) => {
+      if (data.estudio_id === estudio.id) { loadArchivos(); onFileUploaded?.(); }
+    };
     const onTypingStart = (data) => {
       if (data.estudio_id === estudio.id && data.canal === 'estudio') {
         setTypingUser({ name: data.sender_username });
@@ -177,6 +180,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
     on('mensaje:eliminado', onEliminado);
     on('mensajes:leidos', onLeidos);
     on('archivo:subido', onArchivo);
+    on('archivo:eliminado', onArchivoEliminado);
     on('placas:enviadas', onPlacas);
     on('typing:start', onTypingStart);
     on('typing:stop', onTypingStop);
@@ -187,6 +191,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
       off('mensaje:eliminado', onEliminado);
       off('mensajes:leidos', onLeidos);
       off('archivo:subido', onArchivo);
+      off('archivo:eliminado', onArchivoEliminado);
       off('placas:enviadas', onPlacas);
       off('typing:start', onTypingStart);
       off('typing:stop', onTypingStop);

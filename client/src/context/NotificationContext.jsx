@@ -121,6 +121,34 @@ export const NotificationProvider = ({ children }) => {
       notificarListeners('mensaje:nuevo', data);
     });
 
+    // Reenvíos sin toast: los componentes suscritos actualizan sus listas.
+    // (Antes estos eventos del servidor nunca llegaban a la UI y obligaban
+    // a refrescar la página para ver ediciones, borrados y lecturas.)
+    socket.on('mensaje:editado', (data) => notificarListeners('mensaje:editado', data));
+    socket.on('mensaje:eliminado', (data) => notificarListeners('mensaje:eliminado', data));
+    socket.on('mensajes:leidos', (data) => notificarListeners('mensajes:leidos', data));
+
+    socket.on('comunicacion:editado', (data) => notificarListeners('comunicacion:editado', data));
+    socket.on('comunicacion:eliminado', (data) => notificarListeners('comunicacion:eliminado', data));
+    socket.on('comunicacion:leidos', (data) => notificarListeners('comunicacion:leidos', data));
+
+    socket.on('typing:start', (data) => notificarListeners('typing:start', data));
+    socket.on('typing:stop', (data) => notificarListeners('typing:stop', data));
+
+    socket.on('archivo:eliminado', (data) => notificarListeners('archivo:eliminado', data));
+
+    socket.on('estudio:tomado', (data) => notificarListeners('estudio:tomado', data));
+
+    socket.on('diagnostico:corregido', (data) => notificarListeners('diagnostico:corregido', data));
+
+    socket.on('paciente:nuevo', (data) => notificarListeners('paciente:nuevo', data));
+    socket.on('paciente:actualizado', (data) => notificarListeners('paciente:actualizado', data));
+    socket.on('paciente:eliminado', (data) => notificarListeners('paciente:eliminado', data));
+
+    socket.on('plantilla:actualizada', (data) => notificarListeners('plantilla:actualizada', data));
+
+    socket.on('usuario:actualizado', (data) => notificarListeners('usuario:actualizado', data));
+
     socket.on('comunicacion:nuevo', (data) => {
       setUnreadMessages(prev => prev + 1);
       const preview = data.contenido || data.archivo_original || 'Archivo recibido';

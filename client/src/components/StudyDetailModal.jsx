@@ -132,19 +132,30 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
     const onArchivoSubido = (data) => {
       if (data.estudio_id === estudio.id) loadArchivos();
     };
+    const onArchivoEliminado = (data) => {
+      if (data.estudio_id === estudio.id) loadArchivos();
+    };
+    // Si otro usuario elimina el estudio que se está viendo, cerrar el modal.
+    const onEstudioEliminado = (data) => {
+      if (data.id === estudio.id) onClose();
+    };
 
     on('mensaje:nuevo', onMensajeNuevo);
     on('mensaje:editado', onMensajeEditado);
     on('mensaje:eliminado', onMensajeEliminado);
     on('archivo:subido', onArchivoSubido);
+    on('archivo:eliminado', onArchivoEliminado);
+    on('estudio:eliminado', onEstudioEliminado);
 
     return () => {
       off('mensaje:nuevo', onMensajeNuevo);
       off('mensaje:editado', onMensajeEditado);
       off('mensaje:eliminado', onMensajeEliminado);
       off('archivo:subido', onArchivoSubido);
+      off('archivo:eliminado', onArchivoEliminado);
+      off('estudio:eliminado', onEstudioEliminado);
     };
-  }, [on, off, estudio.id, loadMensajes, loadArchivos]);
+  }, [on, off, estudio.id, loadMensajes, loadArchivos, onClose]);
 
   // Cerrar con tecla Escape
   useEffect(() => {

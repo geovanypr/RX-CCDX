@@ -111,12 +111,16 @@ const RadiologistView = () => {
   }, [user.token]);
 
   // Cargar plantillas personalizadas del servidor
-  useEffect(() => {
+  const loadPlantillas = useCallback(() => {
     fetch(`${API_URL}/api/plantillas`, { headers })
       .then(r => r.json())
       .then(d => Array.isArray(d) && setCustomTemplates(d))
       .catch(() => {});
   }, [user.token]);
+
+  useEffect(() => {
+    loadPlantillas();
+  }, [loadPlantillas]);
 
   // Parámetros del centro (membrete de informes)
   useEffect(() => {
@@ -167,16 +171,26 @@ const RadiologistView = () => {
     };
     const onResincronizar = () => {
       fetchEstudios();
+      loadPlantillas();
       const actual = selectedEstudioRef.current;
       if (actual) loadArchivos(actual);
+    };
+    const onArchivoEliminado = (data) => {
+      const actual = selectedEstudioRef.current;
+      if (actual && data.estudio_id === actual.id) loadArchivos(actual);
     };
     on('estudio:enviado', onEstudioCambio);
     on('estudio:nuevo', onEstudioCambio);
     on('estudio:devuelto', onEstudioCambio);
     on('estudio:actualizado', onEstudioCambio);
     on('estudio:eliminado', onEstudioCambio);
+    on('estudio:tomado', onEstudioCambio);
+    on('diagnostico:corregido', onEstudioCambio);
+    on('paciente:eliminado', onEstudioCambio);
+    on('plantilla:actualizada', loadPlantillas);
     on('placas:enviadas', onPlacas);
     on('archivo:subido', onArchivo);
+    on('archivo:eliminado', onArchivoEliminado);
     on('sesion:resincronizada', onResincronizar);
     return () => {
       off('estudio:enviado', onEstudioCambio);
@@ -184,11 +198,16 @@ const RadiologistView = () => {
       off('estudio:devuelto', onEstudioCambio);
       off('estudio:actualizado', onEstudioCambio);
       off('estudio:eliminado', onEstudioCambio);
+      off('estudio:tomado', onEstudioCambio);
+      off('diagnostico:corregido', onEstudioCambio);
+      off('paciente:eliminado', onEstudioCambio);
+      off('plantilla:actualizada', loadPlantillas);
       off('placas:enviadas', onPlacas);
       off('archivo:subido', onArchivo);
+      off('archivo:eliminado', onArchivoEliminado);
       off('sesion:resincronizada', onResincronizar);
     };
-  }, [on, off, fetchEstudios, loadArchivos]);
+  }, [on, off, fetchEstudios, loadArchivos, loadPlantillas]);
 
   useEffect(() => {
     if (selectedEstudio) {

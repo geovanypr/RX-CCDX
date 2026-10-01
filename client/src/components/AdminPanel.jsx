@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL } from '../config';
 import ConfirmDialog from './ConfirmDialog';
@@ -13,6 +14,7 @@ const ROLE_LABELS = {
 
 const AdminPanel = ({ onClose }) => {
   const { user } = useContext(AuthContext);
+  const { on, off } = useContext(NotificationContext);
   const [tab, setTab] = useState('usuarios');
   const [usuarios, setUsuarios] = useState([]);
   const [auditoria, setAuditoria] = useState([]);
@@ -75,6 +77,16 @@ const AdminPanel = ({ onClose }) => {
   useEffect(() => { if (tab === 'auditoria') loadAuditoria(); }, [tab, loadAuditoria]);
   useEffect(() => { if (tab === 'plantillas') loadPlantillas(); }, [tab, loadPlantillas]);
   useEffect(() => { if (tab === 'parametros') { loadConfig(); setConfigSaved(false); } }, [tab, loadConfig]);
+
+  // Actualización en vivo cuando otro administrador modifica usuarios o plantillas.
+  useEffect(() => {
+    on('usuario:actualizado', loadUsuarios);
+    on('plantilla:actualizada', loadPlantillas);
+    return () => {
+      off('usuario:actualizado', loadUsuarios);
+      off('plantilla:actualizada', loadPlantillas);
+    };
+  }, [on, off, loadUsuarios, loadPlantillas]);
 
   // Cerrar con tecla Escape
   useEffect(() => {

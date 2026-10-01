@@ -433,6 +433,8 @@ app.post('/api/auth/register', authenticateToken, requireRole('SUPER_ADMIN'), ra
     const answerHash = bcrypt.hashSync((respuesta_seguridad || '').toLowerCase(), salt);
     db.prepare('INSERT INTO usuarios (username, password_hash, role, pregunta_seguridad, respuesta_seguridad) VALUES (?, ?, ?, ?, ?)').run(username, hash, role, pregunta_seguridad, answerHash);
     logAudit(req.user, 'USUARIO_CREADO', `Usuario creado: ${username} (${role})`);
+    emitToRole('ENCARGADO', 'usuario:actualizado', {});
+    emitToRole('RADIOLOGO', 'usuario:actualizado', {});
     res.json({ success: true });
   } catch (e) {
     if (e.message.includes('UNIQUE')) return res.status(400).json({ error: 'El usuario ya existe' });
@@ -683,6 +685,9 @@ app.put('/api/pacientes/:id', authenticateToken, requireRole('ENCARGADO', 'SUPER
       `UPDATE pacientes SET nombre = ?, fecha_nacimiento = ?, sexo = ?, edad = ?, telefono = ?, direccion = ?, correo = ?, notas = ? WHERE id = ?`
     ).run(nombre, ...values, patient.id);
     db.prepare('UPDATE estudios SET ruta_carpeta = ? WHERE paciente_id = ?').run(newFolder, patient.id);
+    logAudit(req.user, 'PACIENTE_EDITADO', `${patient.registro_id}: datos actualizados`);
+    emitToRole('ENCARGADO', 'paciente:actualizado', { id: patient.id });
+    emitToRole('RADIOLOGO', 'paciente:actualizado', { id: patient.id });
     res.json(db.prepare('SELECT * FROM pacientes WHERE id = ?').get(patient.id));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -705,6 +710,8 @@ app.delete('/api/pacientes/:id', authenticateToken, requireRole('ENCARGADO', 'SU
     // Eliminar carpeta física del paciente
     try { fsManager.removePatientFolder(patient.registro_id, patient.nombre); } catch { /* ya no existe */ }
     logAudit(req.user, 'PACIENTE_ELIMINADO', `${patient.registro_id}: ${patient.nombre} (${studies.length} estudio(s) eliminado(s))`);
+    emitToRole('ENCARGADO', 'paciente:eliminado', { ids: [patient.id], estudio_ids: studies.map(s => s.id) });
+    emitToRole('RADIOLOGO', 'paciente:eliminado', { ids: [patient.id], estudio_ids: studies.map(s => s.id) });
     res.json({ success: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -716,6 +723,8 @@ app.post('/api/pacientes/bulk-delete', authenticateToken, requireRole('ENCARGADO
       return res.status(400).json({ error: 'Lista de IDs no válida' });
     }
     let deletedCount = 0;
+    const deletedIds = [];
+    const deletedEstudioIds = [];
     const removeAll = db.transaction(() => {
       for (const id of ids) {
         const patient = db.prepare('SELECT * FROM pacientes WHERE id = ?').get(id);
@@ -725,17 +734,23 @@ app.post('/api/pacientes/bulk-delete', authenticateToken, requireRole('ENCARGADO
           db.prepare('DELETE FROM mensajes WHERE estudio_id = ?').run(study.id);
           db.prepare('DELETE FROM envios WHERE estudio_id = ?').run(study.id);
           db.prepare('DELETE FROM estudios WHERE id = ?').run(study.id);
+          deletedEstudioIds.push(study.id);
           if (study.ruta_carpeta) {
             try { fs.rmSync(study.ruta_carpeta, { recursive: true, force: true }); } catch {}
           }
         }
         db.prepare('DELETE FROM pacientes WHERE id = ?').run(patient.id);
+        deletedIds.push(patient.id);
         try { fsManager.removePatientFolder(patient.registro_id, patient.nombre); } catch {}
         logAudit(req.user, 'PACIENTE_ELIMINADO', `${patient.registro_id}: ${patient.nombre} (eliminación masiva)`);
         deletedCount++;
       }
     });
     removeAll();
+    if (deletedIds.length) {
+      emitToRole('ENCARGADO', 'paciente:eliminado', { ids: deletedIds, estudio_ids: deletedEstudioIds });
+      emitToRole('RADIOLOGO', 'paciente:eliminado', { ids: deletedIds, estudio_ids: deletedEstudioIds });
+    }
     res.json({ success: true, count: deletedCount });
   } catch (e) { res.status(400).json({ error: e.message || 'Error al eliminar pacientes' }); }
 });
@@ -843,6 +858,7 @@ app.post('/api/pacientes', authenticateToken, requireRole('ENCARGADO'), (req, re
     const info = db.prepare('INSERT INTO pacientes (registro_id, nombre, fecha_nacimiento, sexo, edad) VALUES (?, ?, ?, ?, ?)').run(registro, patientName, fecha_nacimiento, sexo, calculatedAge);
     fsManager.getPatientFolderPath(registro, patientName);
     logAudit(req.user, 'PACIENTE_CREADO', `${registro}: ${patientName}`);
+    emitToRole('ENCARGADO', 'paciente:nuevo', { id: Number(info.lastInsertRowid) });
     res.json({ id: info.lastInsertRowid, registro_id });
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -913,6 +929,7 @@ app.post('/api/registrar', authenticateToken, (req, res) => {
     fsManager.getEstudioFolderPath(result.patient.registro_id, result.patient.nombre, result.estudioFolderName);
     logAudit(req.user, 'ESTUDIO_REGISTRADO', `${registro}: ${study.tipo_estudio}${result.urgente ? ' (urgente)' : ''}`, result.estudioId);
     emitToRole('ENCARGADO', 'estudio:nuevo', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
+    emitToRole('ENCARGADO', 'paciente:actualizado', { id: result.patient.id });
     if (req.user.role === 'RADIOLOGO') {
       emitToRole('RADIOLOGO', 'estudio:enviado', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
     }
@@ -1021,6 +1038,7 @@ app.delete('/api/estudios/:id', authenticateToken, requireRole('ENCARGADO'), (re
     if (removePatientFolder) fsManager.removePatientFolder(estudio.registro_id, estudio.nombre);
     logAudit(req.user, 'ESTUDIO_ELIMINADO', `${estudio.registro_id}: ${estudio.tipo_estudio}${removePatientFolder ? ' (paciente eliminado)' : ''}`, null);
     emitToRole('RADIOLOGO', 'estudio:eliminado', { id: estudio.id, registro_id: estudio.registro_id });
+    emitToRole('ENCARGADO', 'estudio:eliminado', { id: estudio.id, registro_id: estudio.registro_id });
     res.json({ success: true });
   } catch (e) {
     console.error('[Eliminar estudio]', e);
@@ -1114,6 +1132,7 @@ app.post('/api/estudios/:id/tomar', authenticateToken, requireRole('RADIOLOGO'),
     const actualizado = getEstudioInfo(estudio.id);
     logAudit(req.user, 'ESTUDIO_INICIADO', `${estudio.registro_id}: lectura iniciada por el radiólogo`, estudio.id);
     emitToRole('ENCARGADO', 'estudio:tomado', { id: estudio.id, registro_id: estudio.registro_id, radiologo: req.user.username });
+    emitToRole('RADIOLOGO', 'estudio:tomado', { id: estudio.id, registro_id: estudio.registro_id, radiologo: req.user.username });
     res.json({ success: true, estudio: actualizado });
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
@@ -1510,6 +1529,8 @@ app.delete('/api/estudios/:id/archivos/:filename', authenticateToken, requireRol
     if (!fs.statSync(filePath).isFile()) return res.status(400).json({ error: 'El recurso no es un archivo' });
     fs.unlinkSync(filePath);
     logAudit(req.user, 'ARCHIVO_ELIMINADO', `${estudio.registro_id}: ${req.params.filename}`, estudio.id);
+    emitToRole('ENCARGADO', 'archivo:eliminado', { estudio_id: estudio.id, name: req.params.filename });
+    emitToRole('RADIOLOGO', 'archivo:eliminado', { estudio_id: estudio.id, name: req.params.filename });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1956,6 +1977,8 @@ app.post('/api/plantillas', authenticateToken, requireRole('ENCARGADO'), (req, r
     const info = db.prepare('INSERT INTO plantillas (label, texto, categoria, creado_por) VALUES (?, ?, ?, ?)')
       .run(label.trim(), texto.trim(), cleanText(categoria, 40) || 'General', req.user.id);
     logAudit(req.user, 'PLANTILLA_CREADA', `Plantilla: ${label.trim()}`, null);
+    emitToRole('ENCARGADO', 'plantilla:actualizada', {});
+    emitToRole('RADIOLOGO', 'plantilla:actualizada', {});
     res.json({ success: true, id: info.lastInsertRowid });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1969,6 +1992,8 @@ app.put('/api/plantillas/:id', authenticateToken, requireRole('ENCARGADO'), (req
     db.prepare("UPDATE plantillas SET label = ?, texto = ?, categoria = ?, updated_at = datetime('now','localtime') WHERE id = ?")
       .run(label.trim(), texto.trim(), cleanText(categoria, 40) || 'General', req.params.id);
     logAudit(req.user, 'PLANTILLA_EDITADA', `Plantilla: ${label.trim()}`, null);
+    emitToRole('ENCARGADO', 'plantilla:actualizada', {});
+    emitToRole('RADIOLOGO', 'plantilla:actualizada', {});
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1980,6 +2005,8 @@ app.delete('/api/plantillas/:id', authenticateToken, requireRole('ENCARGADO'), (
     const t = db.prepare('SELECT * FROM plantillas WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM plantillas WHERE id = ?').run(req.params.id);
     logAudit(req.user, 'PLANTILLA_ELIMINADA', `Plantilla: ${t?.label || req.params.id}`, null);
+    emitToRole('ENCARGADO', 'plantilla:actualizada', {});
+    emitToRole('RADIOLOGO', 'plantilla:actualizada', {});
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2225,6 +2252,8 @@ app.put('/api/usuarios/:id/activo', authenticateToken, requireRole('SUPER_ADMIN'
     if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
     db.prepare('UPDATE usuarios SET activo = ? WHERE id = ?').run(activo ? 1 : 0, req.params.id);
     logAudit(req.user, activo ? 'USUARIO_ACTIVADO' : 'USUARIO_DESACTIVADO', `Usuario: ${target.username}`);
+    emitToRole('ENCARGADO', 'usuario:actualizado', { id: target.id });
+    emitToRole('RADIOLOGO', 'usuario:actualizado', { id: target.id });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2254,6 +2283,8 @@ app.put('/api/usuarios/:id', authenticateToken, requireRole('SUPER_ADMIN'), (req
       db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...params);
       logAudit(req.user, 'USUARIO_MODIFICADO', `Usuario modificado: ${target.username} -> ${username || target.username}`);
     }
+    emitToRole('ENCARGADO', 'usuario:actualizado', { id: target.id });
+    emitToRole('RADIOLOGO', 'usuario:actualizado', { id: target.id });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2279,6 +2310,8 @@ app.put('/api/usuarios/:id/password', authenticateToken, requireRole('SUPER_ADMI
     params.push(req.params.id);
     db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...params);
     logAudit(req.user, 'USUARIO_PASSWORD_RESET', `Contraseña restablecida: ${target.username}`);
+    emitToRole('ENCARGADO', 'usuario:actualizado', { id: target.id });
+    emitToRole('RADIOLOGO', 'usuario:actualizado', { id: target.id });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

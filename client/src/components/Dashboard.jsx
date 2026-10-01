@@ -174,13 +174,22 @@ const Dashboard = () => {
     const onDiagnostico = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); fetchPendingCounts(); fetchTopEstudios(); };
     const onNuevo      = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); fetchReportes(); fetchEntregas(); fetchTopEstudios(); };
     const onDevuelto   = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); };
-    const onResincronizar = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); fetchPendingCounts(); };
+    const onEstudioCambio = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); };
+    const onPacienteCambio = () => { buscarPacientes(pacienteBusqueda, 1); fetchEstudios(); fetchStats(); fetchAllCounts(); };
+    const onResincronizar = () => { fetchEstudios(); fetchStats(); fetchAllCounts(); fetchPendingCounts(); buscarPacientes(pacienteBusqueda, 1); };
     on('diagnostico:recibido', onDiagnostico);
     on('estudio:nuevo', onNuevo);
     on('estudio:devuelto', onDevuelto);
+    on('estudio:enviado', onEstudioCambio);
+    on('estudio:actualizado', onEstudioCambio);
+    on('estudio:eliminado', onEstudioCambio);
+    on('estudio:tomado', onEstudioCambio);
+    on('paciente:nuevo', onPacienteCambio);
+    on('paciente:actualizado', onPacienteCambio);
+    on('paciente:eliminado', onPacienteCambio);
     on('sesion:resincronizada', onResincronizar);
-    return () => { off('diagnostico:recibido', onDiagnostico); off('estudio:nuevo', onNuevo); off('estudio:devuelto', onDevuelto); off('sesion:resincronizada', onResincronizar); };
-  }, [on, off, fetchEstudios, fetchStats, fetchAllCounts, fetchPendingCounts, fetchReportes, fetchEntregas, fetchTopEstudios]);
+    return () => { off('diagnostico:recibido', onDiagnostico); off('estudio:nuevo', onNuevo); off('estudio:devuelto', onDevuelto); off('estudio:enviado', onEstudioCambio); off('estudio:actualizado', onEstudioCambio); off('estudio:eliminado', onEstudioCambio); off('estudio:tomado', onEstudioCambio); off('paciente:nuevo', onPacienteCambio); off('paciente:actualizado', onPacienteCambio); off('paciente:eliminado', onPacienteCambio); off('sesion:resincronizada', onResincronizar); };
+  }, [on, off, fetchEstudios, fetchStats, fetchAllCounts, fetchPendingCounts, fetchReportes, fetchEntregas, fetchTopEstudios, buscarPacientes, pacienteBusqueda]);
 
   useEffect(() => {
     if (view === 'pacientes') {
