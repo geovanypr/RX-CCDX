@@ -1,5 +1,5 @@
 // Central configuration — all components must import API_URL from here
-const API_URL_PRODUCCION = 'https://rx-ccdx-page.onrender.com';
+const API_URL_PRODUCCION = 'https://rx-ccdx.onrender.com';
 export const API_URL = import.meta.env.VITE_API_URL || (
   import.meta.env.DEV ? 'http://localhost:3002' : API_URL_PRODUCCION
 );

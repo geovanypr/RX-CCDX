@@ -36,6 +36,9 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http:/
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    // Permite cualquier despliegue en Vercel (*.vercel.app) sin tener que
+    // listar cada URL de preview en CORS_ORIGIN.
+    if (/^https:\/\/[a-z0-9][a-z0-9.-]*\.vercel\.app$/i.test(origin)) return callback(null, true);
     return callback(new Error('Origen no autorizado por CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -62,6 +65,9 @@ function authenticateDownload(req, res, next) {
 app.use('/pacientes', authenticateDownload, (req, res, next) => {
   res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  // Las imágenes se incrustan con <img> desde un origen distinto (Vercel).
+  // Con 'same-site' el navegador las bloquea; 'cross-origin' lo permite.
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 }, express.static(fsManager.DATA_DIR));
 
@@ -386,15 +392,24 @@ app.put('/api/config', authenticateToken, requireRole('SUPER_ADMIN'), (req, res)
 // AUTH ROUTES
 // ============================================================
 
-app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, label: 'login', keyFn: (req) => req.body?.username || '' }), (req, res) => {
-  const { username, password } = req.body;
+app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, label: 'login', keyFn: (req) => String(req.body?.username || '').trim() }), (req, res) => {
+  const username = String(req.body?.username || '').trim();
+  const password = req.body?.password;
   try {
-    const user = db.prepare('SELECT * FROM usuarios WHERE username = ?').get(username);
-    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    const user = username ? db.prepare('SELECT * FROM usuarios WHERE username = ?').get(username) : undefined;
+    // Comparación segura: evita excepción 500 si password no es string.
+    const passwordOk = !!user
+      && typeof password === 'string'
+      && password.length > 0
+      && bcrypt.compareSync(password, user.password_hash);
+    if (!passwordOk) {
       logAudit(user ? { id: user.id, username: user.username, role: user.role } : null, 'LOGIN_FALLIDO', `Intento de inicio de sesión fallido: ${username || '(sin usuario)'}`);
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
     if (user.activo === 0) return res.status(403).json({ error: 'Cuenta desactivada. Contacte al administrador.' });
+    // Éxito: limpiar el bucket para que los logins válidos no acumulen
+    // intentos y terminen bloqueados con 429.
+    rateBuckets.delete(`login:${req.ip}:${username}`);
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
     logAudit({ id: user.id, username: user.username, role: user.role }, 'LOGIN', 'Inicio de sesión exitoso');
     res.json({ token, role: user.role, username: user.username, id: user.id });
@@ -490,8 +505,12 @@ app.put('/api/usuarios/me', authenticateToken, (req, res) => {
     }
     params.push(cuenta.id);
     db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+    // Emitir un JWT nuevo con el username actualizado para que el cliente
+    // actualice su sesión en caliente sin depender de un re-login manual.
+    const finalUsername = (nuevoUsuario && nuevoUsuario !== cuenta.username) ? nuevoUsuario : cuenta.username;
+    const newToken = jwt.sign({ id: cuenta.id, username: finalUsername, role: cuenta.role }, JWT_SECRET, { expiresIn: '12h' });
     logAudit(req.user, 'CREDENCIALES_CAMBIADAS', 'Cambio de usuario y/o contraseña propio');
-    res.json({ success: true });
+    res.json({ success: true, username: finalUsername, token: newToken });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1308,6 +1327,8 @@ app.get('/api/estudios/:id/archivos/:filename/view', authenticateDownload, (req,
     if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return res.status(404).json({ error: 'Archivo no encontrado' });
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
+    // Permitir que <img> de otro origen (Vercel) cargue el archivo.
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.sendFile(filePath);
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });

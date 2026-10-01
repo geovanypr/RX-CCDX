@@ -1,15 +1,9 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 
 const AccountSettings = ({ onClose }) => {
-  // Cerrar con tecla Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
-  const { user, logout } = useContext(AuthContext);
+  const { user, login } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     current_password: '',
     new_username: '',
@@ -18,6 +12,22 @@ const AccountSettings = ({ onClose }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+  // Temporizador para cerrar el modal tras guardar. Se cancela si el
+  // usuario cierra el modal antes, para no ejecutar acciones pendientes.
+  const closeTimer = useRef(null);
+  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
+
+  const handleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    onClose();
+  };
+
+  // Cerrar con tecla Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') handleClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -47,30 +57,38 @@ const AccountSettings = ({ onClose }) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${user.token}`
       },
-      body: JSON.stringify(formData)
+      body: JSON.stringify({ ...formData, new_username: formData.new_username.trim() })
     })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        setSuccess('Credenciales actualizadas. Por seguridad debe iniciar sesión nuevamente.');
-        setTimeout(() => logout(), 1600);
-      } else {
-        setError(data.error || 'Error al guardar');
+    .then(async res => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Error al guardar (HTTP ${res.status})`);
       }
+      return data;
     })
-    .catch(() => setError('Error de conexión'))
+    .then(data => {
+      // Actualizar la sesión en caliente con el JWT nuevo: el cambio se
+      // refleja de inmediato y no depende de un re-login manual.
+      if (data.token) {
+        login({ token: data.token, role: user.role, username: data.username || formData.new_username.trim() || user.username, id: user.id });
+      }
+      setSuccess('Credenciales actualizadas correctamente.');
+      setFormData({ current_password: '', new_username: '', new_password: '' });
+      closeTimer.current = setTimeout(() => onClose(), 1400);
+    })
+    .catch((e) => setError(e.message || 'Error de conexión'))
     .finally(() => setSaving(false));
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={handleClose}>
       <div className="modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="flex-1">
             <h3 style={{ margin: 0, fontSize: 16, color: 'var(--color-text)' }}>⚙️ Ajustes de Cuenta</h3>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>Cambie su usuario o contraseña</p>
           </div>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="modal-close" onClick={handleClose}>×</button>
         </div>
 
         <div className="modal-body">
@@ -85,7 +103,7 @@ const AccountSettings = ({ onClose }) => {
             </div>
           )}
           <p style={{ fontSize: 12.5, color: 'var(--color-text-secondary)', marginBottom: 18, lineHeight: 1.6 }}>
-            Deje en blanco lo que no desee cambiar. Al guardar deberá iniciar sesión nuevamente.
+            Deje en blanco lo que no desee cambiar. La sesión se actualiza automáticamente al guardar.
           </p>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -113,7 +131,7 @@ const AccountSettings = ({ onClose }) => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
-              <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+              <button type="button" className="btn btn-ghost" onClick={handleClose}>Cancelar</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
               </button>

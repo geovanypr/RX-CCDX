@@ -33,6 +33,9 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
   
   const [borrador, setBorrador] = useState(null); // Para distancia: {x1, y1, x2, y2}
   const [borradorAngulo, setBorradorAngulo] = useState(null); // Para ángulo: { phase: 1|2, p1, p2, p3 }
+  const [imgError, setImgError] = useState(false);
+  // Resetear el estado de error cada vez que cambia la imagen a mostrar.
+  useEffect(() => { setImgError(false); }, [imageUrl]);
 
   const zoomRef = useRef(1);
   const dragRef = useRef(null);
@@ -302,11 +305,18 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
         }}
       >
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {imgError ? (
+            <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: 16 }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🖼️</div>
+              <div>No se pudo cargar la imagen{imageName ? `: ${imageName}` : ''}.</div>
+              <div style={{ marginTop: 4, fontSize: 12 }}>Verifique su sesión y la conexión con el servidor.</div>
+            </div>
+          ) : (
           <img
             src={imageUrl}
             alt="Radiografía"
             draggable={false}
-            onError={e => { e.target.style.display = 'none'; }}
+            onError={() => setImgError(true)}
             style={{
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rotacion}deg)`,
               transformOrigin: 'center center',
@@ -318,6 +328,7 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
               willChange: 'transform',
             }}
           />
+          )}
         </div>
 
         {/* Capa de Mediciones SVG */}
