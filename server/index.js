@@ -476,12 +476,20 @@ app.put('/api/usuarios/me', authenticateToken, (req, res) => {
     if (nuevoUsuario && nuevoUsuario !== cuenta.username) {
       const ocupado = db.prepare('SELECT id FROM usuarios WHERE username = ? AND id != ?').get(nuevoUsuario, cuenta.id);
       if (ocupado) return res.status(400).json({ error: 'Ese nombre de usuario ya está en uso' });
-      db.prepare('UPDATE usuarios SET username = ? WHERE id = ?').run(nuevoUsuario, cuenta.id);
+    }
+
+    const updates = [];
+    const params = [];
+    if (nuevoUsuario && nuevoUsuario !== cuenta.username) {
+      updates.push('username = ?');
+      params.push(nuevoUsuario);
     }
     if (nuevaClave) {
-      db.prepare('UPDATE usuarios SET password_hash = ? WHERE id = ?')
-        .run(bcrypt.hashSync(nuevaClave, bcrypt.genSaltSync(10)), cuenta.id);
+      updates.push('password_hash = ?');
+      params.push(bcrypt.hashSync(nuevaClave, bcrypt.genSaltSync(10)));
     }
+    params.push(cuenta.id);
+    db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...params);
     logAudit(req.user, 'CREDENCIALES_CAMBIADAS', 'Cambio de usuario y/o contraseña propio');
     res.json({ success: true });
   } catch (e) {

@@ -5,6 +5,9 @@ const bcrypt = require('bcryptjs');
 const SECURITY_QUESTION = '¿Cuál fue tu primera mascota?';
 
 function bootstrapUsers(db) {
+  const userCount = db.prepare('SELECT COUNT(*) AS total FROM usuarios').get().total;
+  if (userCount > 0) return;
+
   const securityAnswer = process.env.DEFAULT_USER_SECURITY_ANSWER;
   const users = [
     {
@@ -29,7 +32,6 @@ function bootstrapUsers(db) {
     return;
   }
 
-  const findUser = db.prepare('SELECT id FROM usuarios WHERE username = ?');
   const insertUser = db.prepare(
     `INSERT INTO usuarios
       (username, password_hash, role, pregunta_seguridad, respuesta_seguridad)
@@ -38,7 +40,6 @@ function bootstrapUsers(db) {
   const createUsers = db.transaction(() => {
     const created = [];
     for (const user of users) {
-      if (findUser.get(user.username)) continue;
       const salt = bcrypt.genSaltSync(10);
       insertUser.run(
         user.username,
