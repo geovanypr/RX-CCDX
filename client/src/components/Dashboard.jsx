@@ -79,6 +79,7 @@ const Dashboard = () => {
   const searchRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout, user } = useContext(AuthContext);
   // Vista en modo supervisión: el superadmin entró desde su portal y puede volver.
   const esVistaAdmin = user.role === 'SUPER_ADMIN' && vieneDeAdmin('dashboard', location.state);
 
@@ -91,7 +92,6 @@ const Dashboard = () => {
     // Solo se aplica al entrar; no se re-ejecuta.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const { logout, user } = useContext(AuthContext);
   const { pendingEncargado, setPendingEncargado, unreadMessages, setUnreadMessages, on, off, fetchPendingCounts, addNotification } = useContext(NotificationContext);
   const { isDark, toggleTheme } = useTheme(user?.id);
 
