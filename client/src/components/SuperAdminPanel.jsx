@@ -4,7 +4,6 @@ import { marcarOrigenAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { API_URL } from '../config';
-import { useTheme } from '../utils/useTheme';
 import Icon from './Icons';
 import ThemeToggle from './ThemeToggle';
 import NotificationCenter from './NotificationCenter';
@@ -33,7 +32,6 @@ const TITULOS = {
 const SuperAdminPanel = () => {
   const { user, logout } = useContext(AuthContext);
   const { on, off, pendingRadiologo, pendingEncargado } = useContext(NotificationContext);
-  const { isDark, toggleTheme } = useTheme(user?.id);
   const navigate = useNavigate();
   // Entrar a una vista operativa marcando el origen: solo así aparece el
   // botón "Volver al Portal SuperAdmin" dentro de esa vista.
@@ -100,7 +98,10 @@ const SuperAdminPanel = () => {
   const usuariosActivos = usuarios.filter(u => u.activo === 1).length;
   const encargados = usuarios.filter(u => u.role === 'ENCARGADO').length;
   const radiologos = usuarios.filter(u => u.role === 'RADIOLOGO').length;
-  const totalPorEstado = porEstado ? Object.values(porEstado).reduce((a, b) => a + (b || 0), 0) : 0;
+  // Solo cuenta si es un objeto plano de conteos (una respuesta de error no debe romper el resumen).
+  const conteosValidos = porEstado && typeof porEstado === 'object' && !Array.isArray(porEstado)
+    && Object.values(porEstado).every(v => typeof v === 'number');
+  const totalPorEstado = conteosValidos ? Object.values(porEstado).reduce((a, b) => a + b, 0) : 0;
 
   const tarjetas = [
     { label: 'Estudios este mes', valor: stats?.totalMes, icon: 'calendar', color: '#1a66b3', bg: '#eff6ff', accion: () => verComoEncargada('Recibida') },
@@ -205,7 +206,7 @@ const SuperAdminPanel = () => {
             {apiOk === null ? '● Verificando API…' : apiOk ? '● API conectada' : '● API sin respuesta'}
           </span>
           <NotificationCenter />
-          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+          <ThemeToggle />
         </div>
 
         {seccion === 'resumen' && (
@@ -249,7 +250,7 @@ const SuperAdminPanel = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12, marginBottom: 16 }}>
                   <div className="card-flat" style={{ padding: '16px 18px', margin: 0 }}>
                     <p className="section-title" style={{ marginBottom: 12 }}>Estudios por estado <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--color-text-muted)' }}>(clic para ver bandeja)</span></p>
-                    {!porEstado || totalPorEstado === 0 ? (
+                    {!conteosValidos || totalPorEstado === 0 ? (
                       <p className="text-muted" style={{ fontSize: 13 }}>Aún no hay estudios registrados.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

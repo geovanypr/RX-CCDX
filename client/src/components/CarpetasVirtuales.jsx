@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, lazy, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
 import { sexoLabel } from '../utils/format';
 import { ESTADO_COLORS, getEstadoColors } from '../utils/constants';
+import { lazyConReintento } from '../utils/lazyConReintento';
 
 // Se carga solo cuando el usuario abre un informe.
-const InformeViewer = lazy(() => import('./InformeViewer'));
+const InformeViewer = lazyConReintento(() => import('./InformeViewer'));
 
 
 // ESTADO_COLORS importado desde utils/constants.js

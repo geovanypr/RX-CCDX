@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef, Suspense } from 'react';
+import { lazyConReintento } from '../utils/lazyConReintento';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { vieneDeAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import AccountSettings from './AccountSettings';
@@ -7,8 +8,8 @@ import RegisterModal from './RegisterModal';
 import ThemeToggle from './ThemeToggle';
 
 // Solo se descargan cuando el radiólogo los abre.
-const CommunicationHub = lazy(() => import('./CommunicationHub'));
-const InformeViewer = lazy(() => import('./InformeViewer'));
+const CommunicationHub = lazyConReintento(() => import('./CommunicationHub'));
+const InformeViewer = lazyConReintento(() => import('./InformeViewer'));
 import Icon from './Icons';
 import PacsViewer from './PacsViewer';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';

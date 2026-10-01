@@ -14,6 +14,19 @@ class AppErrorBoundary extends React.Component {
 
   componentDidCatch(error) {
     console.error('[RX CCDX] Error de interfaz:', error);
+    // Si es un chunk obsoleto tras un redeploy (el lazy con reintento no lo
+    // alcanzó), recargar una vez al bundle fresco en lugar de quedarse aquí.
+    try {
+      const esChunkObsoleto =
+        error?.name === 'ChunkLoadError' ||
+        /Failed to fetch dynamically imported module|Loading chunk|ChunkLoadError|Importing a module script failed/i.test(
+          error?.message || ''
+        );
+      if (esChunkObsoleto && !window.sessionStorage.getItem('rxccdx_chunk_reload')) {
+        window.sessionStorage.setItem('rxccdx_chunk_reload', '1');
+        window.location.reload();
+      }
+    } catch { /* almacenamiento no disponible */ }
   }
 
   render() {

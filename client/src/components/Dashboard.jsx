@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, lazy, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef, Suspense, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import RegisterModal from './RegisterModal';
 import AccountSettings from './AccountSettings';
@@ -11,14 +11,15 @@ import { regionDeTipo } from '../utils/catalogoRadiologia';
 import { FASES, FASE_META, ESTADO_COLORS, getEstadoColors } from '../utils/constants';
 import { vieneDeAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import { useTheme } from '../utils/useTheme';
+import { lazyConReintento } from '../utils/lazyConReintento';
 
 // Vistas pesadas que solo se necesitan cuando el usuario las abre: se cargan
 // bajo demanda para que el panel abra más rápido.
-const StudyDetailModal = lazy(() => import('./StudyDetailModal'));
-const CommunicationHub = lazy(() => import('./CommunicationHub'));
-const CarpetasVirtuales = lazy(() => import('./CarpetasVirtuales'));
-const ReportesView = lazy(() => import('./ReportesView'));
-const InformeViewer = lazy(() => import('./InformeViewer'));
+const StudyDetailModal = lazyConReintento(() => import('./StudyDetailModal'));
+const CommunicationHub = lazyConReintento(() => import('./CommunicationHub'));
+const CarpetasVirtuales = lazyConReintento(() => import('./CarpetasVirtuales'));
+const ReportesView = lazyConReintento(() => import('./ReportesView'));
+const InformeViewer = lazyConReintento(() => import('./InformeViewer'));
 
 const CargandoPanel = () => (
   <div style={{ flex: 1, padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>

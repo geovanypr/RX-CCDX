@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef, useContext, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback, Suspense } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
 import { sexoLabel, formatHora, formatFechaHora } from '../utils/format';
 import ConfirmDialog from './ConfirmDialog';
+import { lazyConReintento } from '../utils/lazyConReintento';
 
 // El visor de informes se descarga solo cuando se abre.
-const InformeViewer = lazy(() => import('./InformeViewer'));
+const InformeViewer = lazyConReintento(() => import('./InformeViewer'));
 import { insertarEmoji } from '../utils/emoji';
 import EmojiPicker from './EmojiPicker';
 import PacsViewer from './PacsViewer';
