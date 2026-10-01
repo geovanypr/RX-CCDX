@@ -913,9 +913,6 @@ app.post('/api/registrar', authenticateToken, (req, res) => {
     fsManager.getEstudioFolderPath(result.patient.registro_id, result.patient.nombre, result.estudioFolderName);
     logAudit(req.user, 'ESTUDIO_REGISTRADO', `${registro}: ${study.tipo_estudio}${result.urgente ? ' (urgente)' : ''}`, result.estudioId);
     emitToRole('ENCARGADO', 'estudio:nuevo', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
-    // La bandeja del radiólogo incluye 'Recibida', así que también se le avisa
-    // en vivo para que el estudio aparezca sin refrescar.
-    emitToRole('RADIOLOGO', 'estudio:nuevo', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
     if (req.user.role === 'RADIOLOGO') {
       emitToRole('RADIOLOGO', 'estudio:enviado', { id: result.estudioId, registro_id: registro, nombre: result.patient.nombre, tipo_estudio: study.tipo_estudio, urgente: result.urgente });
     }
@@ -941,6 +938,12 @@ app.get('/api/estudios', authenticateToken, (req, res) => {
   if (req.user.role === 'RADIOLOGO') {
     conds.push('(e.radiologo_id = ? OR e.radiologo_id IS NULL)');
     params.push(req.user.id);
+    // El radiólogo solo trabaja sobre estudios que ya le fueron enviados.
+    // 'Recibida' y 'Pendiente de enviar al radiólogo' aún están en manos del
+    // encargado y no deben aparecerle (ni siquiera en modo "todos").
+    if (!estado) {
+      conds.push(`e.estado IN ('Enviada al radiólogo', 'Devuelta por revisión')`);
+    }
   }
   if (estado) {
     conds.push('e.estado = ?');

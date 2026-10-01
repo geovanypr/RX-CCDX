@@ -18,7 +18,7 @@ import { NotificationContext } from '../context/NotificationContext';
 import { useTheme } from '../utils/useTheme';
 
 
-const WORKLIST_ESTADOS = ['Recibida', 'Pendiente de enviar al radiólogo', 'Enviada al radiólogo', 'Devuelta por revisión'];
+const WORKLIST_ESTADOS = ['Enviada al radiólogo', 'Devuelta por revisión'];
 
 // Plantillas predeterminadas (las personalizadas se cargan desde el servidor)
 const DEFAULT_TEMPLATES = [
