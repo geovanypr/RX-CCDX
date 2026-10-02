@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { marcarOrigenAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
-import { API_URL } from '../config';
+import { API_URL, downloadAuthenticatedFile } from '../config';
 import Icon from './Icons';
 import ThemeToggle from './ThemeToggle';
 import NotificationCenter from './NotificationCenter';
@@ -329,6 +329,18 @@ const SuperAdminPanel = () => {
                     <div>
                       <p style={{ margin: '0 0 2px', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Anti-suspensión</p>
                       <p style={{ margin: 0, color: 'var(--color-text)' }}>GitHub Actions cada 10 min → /api/health</p>
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 2px', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Respaldo</p>
+                      <p style={{ margin: 0 }}>
+                        <button
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => downloadAuthenticatedFile('/api/admin/respaldo', user.token, 'rxccdx-respaldo.sqlite')}
+                          title="Descargar copia de la base de datos"
+                        >
+                          Descargar respaldo BD
+                        </button>
+                      </p>
                     </div>
                   </div>
                 </div>

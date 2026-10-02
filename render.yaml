@@ -4,7 +4,11 @@ services:
     runtime: node
     buildCommand: npm install --prefix server
     startCommand: node server/index.js
-    plan: free
+    # IMPORTANTE: el plan Free tiene sistema de archivos efímero e IGNORA el
+    # disco persistente. Cada redeploy/reinicio borra usuarios, estudios e
+    # imágenes y el arranque recrea las cuentas con las contraseñas por
+    # defecto. Se requiere Starter (o superior) para que /var/data sobreviva.
+    plan: starter
     region: oregon
 
     # Disco persistente para SQLite y archivos de pacientes.
