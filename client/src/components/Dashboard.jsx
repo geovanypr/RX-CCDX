@@ -375,19 +375,25 @@ const Dashboard = () => {
 
   const isEncargado = user.role === 'ENCARGADO' || user.role === 'SUPER_ADMIN';
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
+  // Drawer lateral en móvil (el CSS lo convierte en overlay ≤900px)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => { setSidebarOpen(false); }, [view, activeFase]);
 
   return (
     <div className="app-container" style={{ position: 'relative' }}>
       {/* ============ Sidebar ============ */}
-      <aside className="sidebar">
+      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <img className="brand-img" src="/logo.png" alt="RX CCDX" />
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <h2 style={{ color: '#fff', fontSize: 16, margin: 0, letterSpacing: '-0.01em' }}>RX CCDX</h2>
             <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 2 }}>{centro?.centro_nombre || 'Gestión Radiológica'}</p>
           </div>
+          <button className="btn btn-ghost menu-btn" onClick={() => setSidebarOpen(false)} aria-label="Cerrar menú" style={{ color: '#fff', padding: '6px 8px' }}>
+            <Icon name="close" size={15} color="#fff" />
+          </button>
         </div>
 
         {/* Stats resumen */}
@@ -469,6 +475,7 @@ const Dashboard = () => {
           </div>
         </div>
       </aside>
+      {sidebarOpen && <div className="drawer-backdrop" onClick={() => setSidebarOpen(false)} />}
 
       {/* ============ Main ============ */}
       <div className="main-content">
@@ -484,6 +491,9 @@ const Dashboard = () => {
         )}
         {/* Topbar */}
         <header className="topbar">
+          <button className="btn btn-ghost menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú" style={{ padding: '7px 9px' }}>
+            <Icon name="list" size={17} color="var(--color-text)" />
+          </button>
           <div className="flex-1">
             <h3 style={{ margin: 0, fontSize: 15.5, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 9 }}>
               {view === 'pacientes' ? (
@@ -1168,7 +1178,7 @@ const Dashboard = () => {
                   </div>
                   <p style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginBottom: 14 }}>Últimos 6 meses · placas realizadas</p>
                   <MonthlyChart data={reportes} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 14 }}>
+                  <div className="stat-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 8, marginTop: 14 }}>
                     <MiniStat label="Placas (6m)" value={reportes.reduce((s, d) => s + d.total, 0)} color="#003366" />
                     <MiniStat label="Diag. recibidos" value={reportes.reduce((s, d) => s + d.diagnosticos, 0)} color="#0f766e" />
                     <MiniStat label="Entregadas" value={reportes.reduce((s, d) => s + d.entregados, 0)} color="#15803d" />
@@ -1669,7 +1679,7 @@ const PacienteExpedienteModal = ({ paciente, onClose, headers, onUpdated, onDele
           {editando && (
             <form onSubmit={guardarCambios} className="card-flat" style={{ padding: 16, margin: '0 0 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {errorForm && <div className="alert alert-danger"><span>⚠️</span><span>{errorForm}</span></div>}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 12 }}>
                 <div>
                   <label className="field-label" htmlFor="pac-tel">Teléfono</label>
                   <input id="pac-tel" className="input" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="(000) 000-0000" />

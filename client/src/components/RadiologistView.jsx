@@ -38,6 +38,8 @@ const RadiologistView = () => {
   const [isCommunicationOpen, setIsCommunicationOpen] = useState(false);
   const [estudios, setEstudios] = useState([]);
   const [worklistSearch, setWorklistSearch] = useState('');
+  // Worklist como drawer en móvil
+  const [worklistOpen, setWorklistOpen] = useState(false);
   const [selectedEstudio, setSelectedEstudio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -530,6 +532,9 @@ const RadiologistView = () => {
         display: 'flex', alignItems: 'center', padding: '0 20px', color: '#fff',
         boxShadow: '0 2px 16px rgba(0,0,0,0.35)',
       }}>
+        <button className="btn btn-sm menu-btn" onClick={() => setWorklistOpen(true)} aria-label="Abrir lista de trabajo" style={{ background: 'rgba(255,255,255,0.14)', color: '#fff', padding: '6px 8px' }}>
+          <Icon name="list" size={15} color="#fff" />
+        </button>
         <div className="sidebar-brand" style={{ marginRight: 12 }}>
           <img className="brand-img" src="/logo.png" alt="RX CCDX" />
         </div>
@@ -584,15 +589,20 @@ const RadiologistView = () => {
         </div>
       </header>
 
+      {worklistOpen && <div className="drawer-backdrop" onClick={() => setWorklistOpen(false)} />}
+
       <div style={{ display: 'flex', width: '100%', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* ============ Worklist ============ */}
-        <div style={{
+        <div className={`rx-worklist${worklistOpen ? ' open' : ''}`} style={{
           width: 290, background: '#0f2b4e', color: '#fff', display: 'flex', flexDirection: 'column',
           flexShrink: 0, borderRight: '1px solid #1e3a5f', height: '100%', overflow: 'hidden'
         }}>
           <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid #1e3a5f', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <h3 style={{ fontSize: 11, margin: 0, color: '#9db8d9', textTransform: 'uppercase', letterSpacing: '0.1em', flex: 1 }}>Lista de Trabajo</h3>
+              <button className="btn btn-xs menu-btn" onClick={() => setWorklistOpen(false)} aria-label="Cerrar lista" style={{ background: 'rgba(255,255,255,0.08)', color: '#b5cdf0', padding: '5px 7px' }}>
+                <Icon name="close" size={13} color="#b5cdf0" />
+              </button>
               <button
                 className="btn btn-xs"
                 onClick={fetchEstudios}
@@ -701,7 +711,7 @@ const RadiologistView = () => {
                 return (
                   <div
                     key={est.id}
-                    onClick={() => setSelectedEstudio(est)}
+                    onClick={() => { setSelectedEstudio(est); setWorklistOpen(false); }}
                     style={{
                       padding: '12px 14px', marginBottom: 6, borderRadius: 10, cursor: 'pointer',
                       background: isSelected ? 'linear-gradient(135deg, #1a66b3, #0a4d8c)' : devuelta ? 'rgba(244,63,94,0.12)' : 'rgba(255,255,255,0.04)',
@@ -741,7 +751,7 @@ const RadiologistView = () => {
 
         {/* ============ Área de lectura ============ */}
         {!selectedEstudio ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(ellipse at 50% 0%, #173c68 0%, #0d1f38 58%)', padding: 32, overflowY: 'auto' }}>
+          <div className="rx-reader" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(ellipse at 50% 0%, #173c68 0%, #0d1f38 58%)', padding: 32, overflowY: 'auto' }}>
             <div style={{ width: 'min(860px, 100%)' }}>
               <div style={{ textAlign: 'center', marginBottom: 30 }}>
                 <div style={{ width: 84, height: 62, margin: '0 auto 16px', padding: '6px 8px', borderRadius: 16, background: 'rgba(255,255,255,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 14px 34px rgba(0,0,0,.28)' }}>
@@ -761,9 +771,9 @@ const RadiologistView = () => {
             </div>
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <div className="rx-reader" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
             {/* ---------- Izquierda: visor ---------- */}
-            <div style={{ flex: 1, background: '#0d1f38', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
+            <div className="rx-pane-visor" style={{ flex: 1, background: '#0d1f38', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
               {/* Visor PACS */}
               {selectedImage ? (
                 <PacsViewer
@@ -854,7 +864,7 @@ const RadiologistView = () => {
                     <span style={{ fontSize: 11, color: '#fda4af', fontWeight: 700 }}>Prioridad máxima en la lista de trabajo</span>
                   ) : null}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px', fontSize: 12.5 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '8px 14px', fontSize: 12.5 }}>
                   <div><span style={{ color: '#64748b' }}>Paciente:</span> <strong style={{ color: '#e2e8f0' }}>{paciente.nombre} ({paciente.edad} años)</strong></div>
                   <div><span style={{ color: '#64748b' }}>Registro:</span> <strong className="mono" style={{ color: '#a8c2ea' }}>{paciente.registro_id}</strong></div>
                   <div><span style={{ color: '#64748b' }}>Estudio:</span> <span style={{ color: '#cbd5e1' }}>{paciente.tipo_estudio}{regionEstudio ? ` · ${regionEstudio}` : ''}</span></div>
@@ -914,7 +924,7 @@ const RadiologistView = () => {
             </div>
 
             {/* ---------- Centro: editor estilo Word ---------- */}
-            <div style={{ width: 400, flexShrink: 0, background: '#e8ecf3', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #cbd5e1' }}>
+            <div className="rx-pane-editor" style={{ width: 400, flexShrink: 0, background: '#e8ecf3', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #cbd5e1' }}>
               <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column' }}>
                 <div className="paper" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 420 }}>
                   <div className="paper-letterhead">
@@ -1036,7 +1046,7 @@ const RadiologistView = () => {
             </div>
 
             {/* ---------- Derecha: comunicación ---------- */}
-            <div style={{ width: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="rx-pane-comm" style={{ width: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <CommunicationPanel
                 estudio={selectedEstudio}
                 onFileUploaded={() => loadArchivos(selectedEstudio)}
@@ -1095,8 +1105,8 @@ const RadiologistView = () => {
                   ))}
                 </div>
               )}
-              <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
+              <div className="cmp-split" style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+                <div className="cmp-pane" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
                   <div style={{ padding: '7px 12px', background: '#102b4d', color: '#8cc3ff', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>ESTUDIO ACTUAL</div>
                   {selectedImage ? (
                     <PacsViewer
@@ -1113,7 +1123,7 @@ const RadiologistView = () => {
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5f85', fontSize: 12.5 }}>Seleccione una placa del estudio actual.</div>
                   )}
                 </div>
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                <div className="cmp-pane" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ padding: '7px 12px', background: '#102b4d', color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>ESTUDIO PREVIO</div>
                   {(() => {
                     const previo = comparacion.estudios?.[comparacion.indiceEstudio];

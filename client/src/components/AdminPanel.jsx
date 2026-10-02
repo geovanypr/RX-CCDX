@@ -307,7 +307,7 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
 
           {/* USUARIOS */}
           {tab === 'usuarios' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 24 }}>
               <form onSubmit={handleCreateUser} className="card-flat" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 18, margin: 0, height: 'fit-content' }}>
                 <div className="section-title" style={{ marginBottom: 2 }}>Crear nuevo usuario</div>
                 <div>
@@ -471,7 +471,7 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
                     <label className="field-label" htmlFor="cfg-nombre">Nombre del centro radiológico</label>
                     <input id="cfg-nombre" className="input" value={config.centro_nombre || ''} onChange={e => setConfig({ ...config, centro_nombre: e.target.value })} />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 14 }}>
                     <div>
                       <label className="field-label" htmlFor="cfg-dir">Dirección</label>
                       <input id="cfg-dir" className="input" value={config.centro_direccion || ''} onChange={e => setConfig({ ...config, centro_direccion: e.target.value })} />
@@ -502,7 +502,7 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
 
           {/* PLANTILLAS */}
           {tab === 'plantillas' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 24 }}>
               <form onSubmit={handleSavePlantilla} className="card-flat" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 18, margin: 0, height: 'fit-content' }}>
                 <div className="section-title" style={{ marginBottom: 2 }}>
                   {editingTpl ? 'Editar plantilla' : 'Nueva plantilla de diagnóstico'}

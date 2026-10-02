@@ -48,6 +48,9 @@ const SuperAdminPanel = () => {
   };
   const [seccion, setSeccion] = useState('resumen');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // Drawer lateral en móvil
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => { setSidebarOpen(false); }, [seccion]);
   const [stats, setStats] = useState(null);
   const [porEstado, setPorEstado] = useState(null);
   const [usuarios, setUsuarios] = useState([]);
@@ -137,7 +140,7 @@ const SuperAdminPanel = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
       {/* ── Barra lateral administrativa (identidad propia, morada) ── */}
-      <aside style={{
+      <aside className={`admin-sidebar${sidebarOpen ? ' open' : ''}`} style={{
         width: 248, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4,
         padding: '18px 14px', color: '#fff',
         background: 'linear-gradient(180deg, #2e1065 0%, #1e0a44 60%, #150832 100%)',
@@ -152,6 +155,9 @@ const SuperAdminPanel = () => {
               SUPER ADMIN
             </span>
           </div>
+          <button className="btn btn-ghost menu-btn" onClick={() => setSidebarOpen(false)} aria-label="Cerrar menú" style={{ color: '#fff', padding: '6px 8px', marginLeft: 'auto' }}>
+            <Icon name="close" size={15} color="#fff" />
+          </button>
         </div>
 
         <p style={{ margin: '6px 6px 4px', fontSize: 10.5, fontWeight: 700, letterSpacing: 0.8, color: 'rgba(255,255,255,0.45)' }}>ADMINISTRACIÓN</p>
@@ -190,10 +196,14 @@ const SuperAdminPanel = () => {
         </button>
         <p style={{ margin: '10px 6px 0', fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Creadores: GYPR y AnabelLp</p>
       </aside>
+      {sidebarOpen && <div className="drawer-backdrop" onClick={() => setSidebarOpen(false)} />}
 
       {/* ── Contenido ── */}
-      <main style={{ flex: 1, minWidth: 0, padding: '20px 26px 40px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+      <main style={{ flex: 1, minWidth: 0, padding: '20px 26px 40px', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú" style={{ padding: '7px 9px' }}>
+            <Icon name="list" size={17} color="var(--color-text)" />
+          </button>
           <div style={{ flex: 1 }}>
             <h2 style={{ margin: 0, fontSize: 20, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Icon name="shield" size={20} color="#7e22ce" /> {TITULOS[seccion]}
@@ -313,7 +323,7 @@ const SuperAdminPanel = () => {
                 </div>
                 <div className="card-flat" style={{ padding: '16px 18px', margin: '0 0 16px' }}>
                   <p className="section-title" style={{ marginBottom: 12 }}>Sistema</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12.5 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 8, fontSize: 12.5 }}>
                     <div>
                       <p style={{ margin: '0 0 2px', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>API (Render)</p>
                       <p className="mono" style={{ margin: 0, color: 'var(--color-text)', wordBreak: 'break-all' }}>{API_URL}</p>

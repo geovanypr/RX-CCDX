@@ -521,7 +521,7 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
                   {estudio.urgente ? 'Quitar urgencia' : 'Marcar como urgente'}
                 </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
                 <InfoField label="Paciente" value={estudio.nombre} />
                 <InfoField label="Registro" value={estudio.registro_id} />
                 <InfoField label="Tipo de estudio" value={estudio.tipo_estudio || '—'} />

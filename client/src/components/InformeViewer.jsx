@@ -560,7 +560,7 @@ const InformeViewer = ({ estudio, userRole, onClose, onSaved, autoPrint = false 
                   fontFamily: '"Times New Roman", Times, serif', fontSize: 13, lineHeight: 1.85, color: '#374151',
                   background: '#f8fafc',
                 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '4px 24px' }}>
                     <div><strong>PACIENTE:</strong> <span style={{ color: '#0f172a', fontWeight: 700 }}>{data.paciente}</span></div>
                     <div><strong>REGISTRO:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{data.registro_id}</span></div>
                     <div><strong>EDAD / SEXO:</strong> {data.edad} años · {sexoLabel(data.sexo)}</div>

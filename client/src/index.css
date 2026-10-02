@@ -2398,3 +2398,110 @@ a:focus-visible,
 
 /* Los botones con clase .btn ya tienen su propio shadow-glow */
 .btn:focus-visible { outline: none; }
+
+/* ============================================================
+   RESPONSIVE COMPLETO (móvil / tablet / escritorio)
+   - Barras laterales y worklist como drawers con botón hamburguesa
+   - Tablas con scroll horizontal, sin romper el layout
+   - Comparación lado a lado se apila en vertical
+   - Sin scroll horizontal fantasma en la página
+   ============================================================ */
+html, body { overflow-x: clip; }
+img, video, canvas, svg { max-width: 100%; }
+
+/* Botón hamburguesa: solo visible en pantallas pequeñas */
+.menu-btn { display: none; }
+
+/* Fondo para cerrar drawers tocando fuera */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 10, 20, 0.5);
+  z-index: 3990;
+  animation: fadeIn 0.16s ease;
+}
+
+/* Tablas: scroll horizontal interno */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap table { width: 100%; min-width: 560px; }
+
+@media (max-width: 1100px) {
+  /* Worklist del radiólogo un poco más angosta */
+  .rx-worklist { width: 250px !important; }
+}
+
+@media (max-width: 900px) {
+  /* Botón hamburguesa visible */
+  .menu-btn { display: inline-flex; }
+
+  /* Sidebar de administración (portal) como drawer */
+  .admin-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 85vw) !important;
+    z-index: 4000;
+    transform: translateX(-105%);
+    transition: transform var(--transition-slow);
+    box-shadow: var(--shadow-xl);
+  }
+  .admin-sidebar.open { transform: translateX(0); }
+
+  /* Worklist del radiólogo como drawer */
+  .rx-worklist {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100dvh !important;
+    width: min(320px, 88vw) !important;
+    z-index: 4000;
+    transform: translateX(-105%);
+    transition: transform var(--transition-slow);
+    box-shadow: var(--shadow-xl);
+  }
+  .rx-worklist.open { transform: translateX(0); }
+  .rx-reader { width: 100% !important; }
+
+  /* Lector en columna: visor, editor y mensajería apilados con scroll */
+  .rx-reader { flex-direction: column !important; overflow-y: auto !important; }
+  .rx-pane-visor { width: 100% !important; min-height: 52vh; border-right: none !important; border-bottom: 1px solid #1e3a5f; flex-shrink: 0; }
+  .rx-pane-editor, .rx-pane-comm { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--color-border); overflow: visible !important; flex-shrink: 0; }
+  .rx-pane-comm { min-height: 320px; }
+
+  /* Topbar flexible con salto de línea */
+  .topbar { flex-wrap: wrap; height: auto; min-height: var(--topbar-height); padding: 10px 14px; row-gap: 8px; }
+  .topbar .flex-1 { flex: 1 1 180px; min-width: 0; }
+  .topbar .input { flex: 1 1 160px; width: auto !important; min-width: 0; }
+
+  /* Comparación: paneles apilados */
+  .cmp-split { flex-direction: column !important; overflow-y: auto !important; }
+  .cmp-pane { min-height: 46%; border-right: none !important; border-bottom: 1px solid #1e3a5f; }
+
+  /* Auth y modales a pantalla casi completa */
+  .auth-card { margin: 16px; width: calc(100% - 32px); }
+  .modal-body { padding: 16px; }
+
+  /* Tablas más compactas */
+  .table-wrap th, .table-wrap td { padding: 8px 10px; font-size: 12px; }
+
+  /* Barra de filtros compacta */
+  .filter-bar { padding: 10px 12px; }
+
+  /* Ocultables en móvil */
+  .hide-mobile { display: none !important; }
+}
+
+@media (max-width: 640px) {
+  .btn { padding: 8px 12px; font-size: 12.5px; }
+  .topbar h3 { font-size: 14px !important; }
+  /* Estadísticas y tarjetas en 2 columnas */
+  .stat-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .modal-header { padding: 14px 16px; }
+  .toast-stack { right: 10px; left: 10px; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
