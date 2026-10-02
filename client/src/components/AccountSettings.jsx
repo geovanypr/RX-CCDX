@@ -69,8 +69,15 @@ const AccountSettings = ({ onClose }) => {
     .then(data => {
       // Actualizar la sesión en caliente con el JWT nuevo: el cambio se
       // refleja de inmediato y no depende de un re-login manual.
+      // Usamos los datos del servidor (role, id) para no depender del estado
+      // previo del contexto, que podría estar desactualizado.
       if (data.token) {
-        login({ token: data.token, role: user.role, username: data.username || formData.new_username.trim() || user.username, id: user.id });
+        login({
+          token: data.token,
+          role: data.role || user.role,
+          username: data.username || formData.new_username.trim() || user.username,
+          id: data.id ?? user.id,
+        });
       }
       setSuccess('Credenciales actualizadas correctamente.');
       setFormData({ current_password: '', new_username: '', new_password: '' });

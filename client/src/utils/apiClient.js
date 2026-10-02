@@ -6,7 +6,10 @@
 import { API_URL } from '../config';
 import { getSessionToken, clearSession } from './sessionStore';
 
-const RUTAS_SIN_SESION = /\/api\/auth\/(login|recover)/;
+// Rutas donde un 401 NO significa "sesión expirada" sino un error
+// esperado (credenciales inválidas, contraseña actual incorrecta, etc.)
+// y por tanto no se debe limpiar la sesión ni redirigir al login.
+const RUTAS_SIN_SESION = /\/api\/auth\/(login|recover)|\/api\/usuarios\/me/;
 
 let instalado = false;
 

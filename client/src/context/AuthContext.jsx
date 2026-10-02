@@ -14,10 +14,19 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
 
-    // Sincronizar logout entre pestañas: si otra pestaña borra el token, cerrar sesión aquí también
+    // Sincronizar sesión entre pestañas: si otra pestaña borra o actualiza
+    // el token, reflejar el cambio aquí también.
     const handleStorage = (e) => {
-      if (e.key === 'rxccdx_token' && !e.newValue) {
-        setUser(null);
+      if (e.key === 'rxccdx_token') {
+        if (!e.newValue) {
+          // Otra pestaña cerró sesión
+          setUser(null);
+        } else if (e.newValue !== e.oldValue) {
+          // Otra pestaña actualizó la sesión (p. ej. cambio de credenciales):
+          // re-leer la sesión completa del storage para no quedarnos con datos viejos.
+          const sesionActualizada = readSession();
+          if (sesionActualizada) setUser(sesionActualizada);
+        }
       }
     };
     window.addEventListener('storage', handleStorage);

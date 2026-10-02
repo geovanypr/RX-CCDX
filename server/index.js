@@ -507,16 +507,61 @@ app.put('/api/usuarios/me', authenticateToken, (req, res) => {
       updates.push('password_hash = ?');
       params.push(bcrypt.hashSync(nuevaClave, bcrypt.genSaltSync(10)));
     }
+
+    // Si no hay cambios efectivos (username igual al actual y sin nueva contraseña),
+    // devolver error en vez de ejecutar una query SQL vacía que fallaría.
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No hay cambios para guardar' });
+    }
+
     params.push(cuenta.id);
     db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
     // Emitir un JWT nuevo con el username actualizado para que el cliente
     // actualice su sesión en caliente sin depender de un re-login manual.
     const finalUsername = (nuevoUsuario && nuevoUsuario !== cuenta.username) ? nuevoUsuario : cuenta.username;
-    const newToken = jwt.sign({ id: cuenta.id, username: finalUsername, role: cuenta.role }, JWT_SECRET, { expiresIn: '12h' });
+
+    // Preservar la duración original del token. Si el usuario se logueó con
+    // "Recuérdame" (30d), no recortar a 12h al cambiar credenciales.
+    const tokenOriginal = req.headers['authorization']?.split(' ')[1];
+    let expiresIn = '12h';
+    try {
+      const decoded = jwt.decode(tokenOriginal, { complete: true });
+      if (decoded?.payload?.exp) {
+        const restante = decoded.payload.exp - Math.floor(Date.now() / 1000);
+        // Si el token original tenía más de 12h de vida restante,
+        // preservar la duración larga (sesión "Recuérdame").
+        if (restante > 12 * 3600) expiresIn = '30d';
+      }
+    } catch { /* usar 12h por defecto */ }
+
+    const newToken = jwt.sign(
+      { id: cuenta.id, username: finalUsername, role: cuenta.role },
+      JWT_SECRET,
+      { expiresIn }
+    );
     logAudit(req.user, 'CREDENCIALES_CAMBIADAS', 'Cambio de usuario y/o contraseña propio');
-    res.json({ success: true, username: finalUsername, token: newToken });
+    // Enviar todos los datos de sesión para que el cliente no dependa del estado previo.
+    res.json({ success: true, username: finalUsername, token: newToken, role: cuenta.role, id: cuenta.id });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// Respaldo de la base de datos (solo SUPER_ADMIN). Descarga una copia
+// consistente del SQLite. Útil como copia manual antes de redeploys.
+// Nota: en plan Free de Render el disco no persiste; se requiere plan
+// Starter o superior para que los datos sobrevivan reinicios.
+app.get('/api/admin/respaldo', authenticateToken, requireRole('SUPER_ADMIN'), async (req, res) => {
+  const nombre = `rxccdx-respaldo-${fechaLocalISO()}.sqlite`;
+  const destino = path.join(os.tmpdir(), `${Date.now()}-${nombre}`);
+  try {
+    await db.backup(destino);
+    logAudit(req.user, 'RESPALDO_DESCARGADO', 'Copia de seguridad de la base de datos descargada');
+    res.download(destino, nombre, () => { fs.rmSync(destino, { force: true }); });
+  } catch (e) {
+    fs.rmSync(destino, { force: true });
+    if (!res.headersSent) res.status(500).json({ error: 'No se pudo generar el respaldo' });
   }
 });
 
