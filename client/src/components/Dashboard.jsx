@@ -113,14 +113,14 @@ const Dashboard = () => {
       .then(r => r.json())
       .then(d => Array.isArray(d) && setEstudios(d))
       .catch(e => console.error(e));
-  }, [activeFase, user.token]);
+  }, [activeFase, headers]);
 
   const fetchStats = useCallback(() => {
     fetch(`${API_URL}/api/stats`, { headers })
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(e => console.error(e));
-  }, [user.token]);
+  }, [headers]);
 
   // Un solo endpoint devuelve el conteo de todas las bandejas (antes: 7 peticiones).
   const fetchAllCounts = useCallback(async () => {
@@ -133,35 +133,35 @@ const Dashboard = () => {
     } catch {
       // Si falla el conteo se conserva el último valor conocido de cada bandeja.
     }
-  }, [user.token]);
+  }, [headers]);
 
   const fetchReportes = useCallback(() => {
     fetch(`${API_URL}/api/reportes/mensual?meses=6`, { headers })
       .then(r => r.json())
       .then(d => Array.isArray(d) && setReportes(d))
       .catch(() => {});
-  }, [user.token]);
+  }, [headers]);
 
   const fetchEntregas = useCallback(() => {
     fetch(`${API_URL}/api/calendario/entregas`, { headers })
       .then(r => r.json())
       .then(d => Array.isArray(d) && setEntregas(d))
       .catch(() => {});
-  }, [user.token]);
+  }, [headers]);
 
   const fetchTopEstudios = useCallback(() => {
     fetch(`${API_URL}/api/reportes/top-estudios`, { headers })
       .then(r => r.json())
       .then(d => Array.isArray(d) && setTopEstudios(d))
       .catch(() => {});
-  }, [user.token]);
+  }, [headers]);
 
   const fetchConfig = useCallback(() => {
     fetch(`${API_URL}/api/config`, { headers })
       .then(r => r.json())
       .then(d => d && typeof d === 'object' && setCentro(d))
       .catch(() => {});
-  }, [user.token]);
+  }, [headers]);
 
   const buscarPacientes = useCallback((q = '', page = 1) => {
     fetch(`${API_URL}/api/pacientes/buscar?q=${encodeURIComponent((q || '').trim())}&page=${page}&limit=20`, { headers })
@@ -175,7 +175,7 @@ const Dashboard = () => {
         }
       })
       .catch(() => {});
-  }, [user.token]);
+  }, [headers]);
 
   useEffect(() => { fetchEstudios(); }, [fetchEstudios]);
   useEffect(() => { fetchStats(); fetchAllCounts(); fetchReportes(); fetchEntregas(); fetchTopEstudios(); fetchConfig(); }, [fetchStats, fetchAllCounts, fetchReportes, fetchEntregas, fetchTopEstudios, fetchConfig]);

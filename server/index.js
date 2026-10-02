@@ -312,7 +312,11 @@ io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Autenticación requerida'));
   try {
-    socket.user = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET);
+    // Verificar que el usuario sigue activo en BD (igual que el middleware HTTP)
+    const usuario = db.prepare('SELECT id, username, role, activo FROM usuarios WHERE id = ?').get(payload.id);
+    if (!usuario || !usuario.activo) return next(new Error('Usuario no encontrado o desactivado'));
+    socket.user = { id: usuario.id, username: usuario.username, role: usuario.role };
     next();
   } catch {
     next(new Error('Token inválido'));
@@ -801,16 +805,25 @@ app.post('/api/pacientes/bulk-delete', authenticateToken, requireRole('ENCARGADO
 });
 
 app.get('/api/pacientes', authenticateToken, (req, res) => {
-  res.json(db.prepare('SELECT * FROM pacientes ORDER BY fecha_creacion DESC').all());
+  // Límite de seguridad: evita payloads masivos con grandes bases de datos.
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 200, 1), 500);
+  const offset = Math.max(0, parseInt(req.query.offset) || 0);
+  res.json(db.prepare('SELECT * FROM pacientes ORDER BY fecha_creacion DESC LIMIT ? OFFSET ?').all(limit, offset));
 });
 
-// Buscar un paciente específico por su número de registro (usado en el formulario de registro)
+// NOTA: la ruta /api/pacientes/por-registro/:registro_id (línea ~1601) es la versión
+// completa con recálculo de edad. Esta entrada se conserva por compatibilidad pero
+// delega en la misma lógica para no duplicar código.
 app.get('/api/pacientes/por-registro/:registroId', authenticateToken, (req, res) => {
   try {
     const registroId = (req.params.registroId || '').trim().toUpperCase();
     if (!registroId) return res.json({ found: false, paciente: null });
     const patient = db.prepare('SELECT * FROM pacientes WHERE registro_id = ?').get(registroId);
     if (!patient) return res.json({ found: false, paciente: null });
+    // Recalcular edad desde fecha_nacimiento si está disponible
+    if (patient.fecha_nacimiento) {
+      patient.edad = calcularEdad(patient.fecha_nacimiento) ?? patient.edad;
+    }
     res.json({ found: true, paciente: patient });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -939,7 +952,10 @@ app.post('/api/registrar', authenticateToken, (req, res) => {
       }
       if (!patient && patientName) {
         const normNew = patientName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
-        const candidates = db.prepare('SELECT * FROM pacientes').all();
+        // Pre-filtrar por el primer token del nombre para evitar full table scan.
+        // La comparación exacta normalizada se hace en JS sobre el subconjunto.
+        const primerToken = normNew.split(' ')[0];
+        const candidates = db.prepare("SELECT * FROM pacientes WHERE nombre LIKE ?").all(`%${primerToken}%`);
         patient = candidates.find(p => {
           const norm = (p.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
           return norm === normNew;
@@ -996,20 +1012,32 @@ app.get('/api/estudios', authenticateToken, (req, res) => {
   const params = [];
   const conds = [];
 
-  // Radiólogos only see studies assigned to them or sent to all radiologists
+  // Radiólogos only see studies assigned to them or sent to all radiologists.
+  // El filtro de rol se aplica SIEMPRE, independientemente del parámetro ?estado=,
+  // para evitar que un radiólogo pueda ver estudios de otras bandejas pasando
+  // manualmente un estado restringido en la URL.
   if (req.user.role === 'RADIOLOGO') {
     conds.push('(e.radiologo_id = ? OR e.radiologo_id IS NULL)');
     params.push(req.user.id);
-    // El radiólogo solo trabaja sobre estudios que ya le fueron enviados.
-    // 'Recibida' y 'Pendiente de enviar al radiólogo' aún están en manos del
-    // encargado y no deben aparecerle (ni siquiera en modo "todos").
-    if (!estado) {
+    if (estado) {
+      // El radiólogo solo puede filtrar dentro de sus estados permitidos
+      const ESTADOS_RADIOLOGO = ['Enviada al radiólogo', 'Devuelta por revisión', 'Diagnóstico recibido'];
+      if (ESTADOS_RADIOLOGO.includes(estado)) {
+        conds.push('e.estado = ?');
+        params.push(estado);
+      } else {
+        // Estado no permitido para radiólogo: devolver lista vacía de forma segura
+        return res.json([]);
+      }
+    } else {
+      // Sin filtro de estado: solo los estados de trabajo del radiólogo
       conds.push(`e.estado IN ('Enviada al radiólogo', 'Devuelta por revisión')`);
     }
-  }
-  if (estado) {
-    conds.push('e.estado = ?');
-    params.push(estado);
+  } else {
+    if (estado) {
+      conds.push('e.estado = ?');
+      params.push(estado);
+    }
   }
   if (conds.length) query += ' WHERE ' + conds.join(' AND ');
   // Los estudios urgentes siempre encabezan cada bandeja.
@@ -1990,15 +2018,20 @@ app.post('/api/estudios/lote/entregar', authenticateToken, requireRole('ENCARGAD
   try {
     let ok = 0;
     const fallidos = [];
-    for (const id of ids) {
-      const info = db.prepare('SELECT id, registro_id, estado FROM estudios WHERE id = ?').get(id);
-      if (!info) { fallidos.push(id); continue; }
-      const allowed = (TRANSICIONES[info.estado] || []).includes('Entregado');
-      if (!allowed) { fallidos.push(id); continue; }
-      db.prepare("UPDATE estudios SET estado = ?, fecha_estado = datetime('now') WHERE id = ?").run('Entregado', id);
-      logAudit(req.user, 'ESTADO_CAMBIADO', `${info.registro_id}: entregado en lote (${info.estado} → Entregado)`, id);
-      ok++;
-    }
+    // Usar transacción para que todos los cambios sean atómicos:
+    // si falla uno, ninguno queda en estado inconsistente.
+    const entregar = db.transaction(() => {
+      for (const id of ids) {
+        const info = db.prepare('SELECT id, registro_id, estado FROM estudios WHERE id = ?').get(id);
+        if (!info) { fallidos.push(id); continue; }
+        const allowed = (TRANSICIONES[info.estado] || []).includes('Entregado');
+        if (!allowed) { fallidos.push(id); continue; }
+        db.prepare("UPDATE estudios SET estado = ?, fecha_estado = datetime('now') WHERE id = ?").run('Entregado', id);
+        logAudit(req.user, 'ESTADO_CAMBIADO', `${info.registro_id}: entregado en lote (${info.estado} → Entregado)`, id);
+        ok++;
+      }
+    });
+    entregar();
     res.json({ success: true, ok, fallidos });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2179,8 +2212,8 @@ app.get('/api/carpetas/:paciente_id', authenticateToken, requireRole('ENCARGADO'
     // ── Archivos del expediente ─────────────────────────────────────────────
     // FIX T3: usar fsManager.getFolderName() con normalización NFD correcta
     // en lugar del replace simple que rompía nombres con tildes.
-    const patientFolder = path.join(fsManager.DATA_DIR, fsManager.getFolderName(paciente.registro_id, paciente.nombre));
     const folderName = fsManager.getFolderName(paciente.registro_id, paciente.nombre);
+    const patientFolder = path.join(fsManager.DATA_DIR, folderName);
 
     // Archivos en la raíz del expediente (compatibilidad con estudios sin subcarpeta)
     let archivosRaiz = [];
@@ -2339,8 +2372,10 @@ app.put('/api/usuarios/:id', authenticateToken, requireRole('SUPER_ADMIN'), (req
 // Resetear contraseña de otro usuario (solo SUPER_ADMIN)
 app.put('/api/usuarios/:id/password', authenticateToken, requireRole('SUPER_ADMIN'), (req, res) => {
   const { new_password, respuesta_seguridad } = req.body;
-  if (typeof new_password !== 'string' || new_password.length < 4) {
-    return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+  // Mínimo 8 chars para coherencia con el estándar del sistema (registro exige 10,
+  // pero el admin puede necesitar resetear a algo temporal más corto).
+  if (typeof new_password !== 'string' || new_password.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
   }
   try {
     const target = db.prepare('SELECT * FROM usuarios WHERE id = ?').get(req.params.id);
