@@ -444,7 +444,9 @@ const RadiologistView = () => {
     }
   };
 
-  // Comparación lado a lado con el estudio previo más reciente que tenga placas
+  // Comparación lado a lado con los estudios previos del mismo paciente.
+  // Carga las placas de hasta 4 estudios previos en paralelo para poder
+  // elegir el estudio y navegar entre sus fotos sin salir de la vista.
   const abrirComparacion = async () => {
     if (!selectedEstudio) return;
     const candidatos = historialPrevios.slice(0, 4);
@@ -452,24 +454,59 @@ const RadiologistView = () => {
       addNotification('Sin estudios previos', 'Este paciente no tiene estudios anteriores registrados.', 'default');
       return;
     }
-    setComparacion({ cargando: true, estudio: null, imagenUrl: null });
-    for (const previo of candidatos) {
-      try {
-        const res = await fetch(`${API_URL}/api/estudios/${previo.id}/archivos`, { headers });
-        const data = await res.json();
-        const imagenes = Array.isArray(data) ? data.filter(f => f.isImage) : [];
-        if (imagenes.length > 0) {
-          setComparacion({ cargando: false, estudio: previo, archivo: imagenes[0] });
-          return;
+    setComparacion({ cargando: true, estudios: [], indiceEstudio: 0, indiceImagen: 0 });
+    try {
+      const resultados = await Promise.all(candidatos.map(async (previo) => {
+        try {
+          const res = await fetch(`${API_URL}/api/estudios/${previo.id}/archivos`, { headers });
+          const data = await res.json();
+          const imagenes = Array.isArray(data) ? data.filter(f => f.isImage) : [];
+          return imagenes.length > 0 ? { estudio: previo, archivos: imagenes } : null;
+        } catch {
+          return null; // se ignora ese estudio previo y se sigue con los demás
         }
-      } catch {
-        // se intenta con el siguiente estudio previo
+      }));
+      const conPlacas = resultados.filter(Boolean);
+      if (conPlacas.length === 0) {
+        setComparacion(null);
+        addNotification('Los estudios previos no tienen placas', 'El historial existe, pero sin radiografías adjuntas para comparar.', 'default');
+        return;
       }
+      setComparacion({ cargando: false, estudios: conPlacas, indiceEstudio: 0, indiceImagen: 0 });
+    } catch {
+      setComparacion(null);
+      addNotification('No se pudo cargar la comparación', 'Verifique la conexión e intente de nuevo.', 'error');
     }
-    setComparacion(null);
-    addNotification('Los estudios previos no tienen placas', 'El historial existe, pero sin radiografías adjuntas para comparar.', 'default');
   };
 
+  // Navegar entre las fotos del estudio previo seleccionado en la comparación.
+  const seleccionarPreviaRelativa = (paso) => {
+    setComparacion(prev => {
+      if (!prev || prev.cargando || !Array.isArray(prev.estudios) || prev.estudios.length === 0) return prev;
+      const imgs = prev.estudios[prev.indiceEstudio]?.archivos || [];
+      if (imgs.length === 0) return prev;
+      const sig = Math.min(imgs.length - 1, Math.max(0, (prev.indiceImagen || 0) + paso));
+      return sig === (prev.indiceImagen || 0) ? prev : { ...prev, indiceImagen: sig };
+    });
+  };
+
+  const elegirEstudioPrevio = (i) => {
+    setComparacion(prev => (prev ? { ...prev, indiceEstudio: i, indiceImagen: 0 } : prev));
+  };
+
+  // Teclas dentro de la comparación: Esc sale, ← → cambian la placa previa.
+  useEffect(() => {
+    if (!comparacion || comparacion.cargando) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); setComparacion(null); return; }
+      const etiqueta = (e.target.tagName || '').toLowerCase();
+      if (etiqueta === 'input' || etiqueta === 'textarea' || e.target.isContentEditable) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); seleccionarPreviaRelativa(1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); seleccionarPreviaRelativa(-1); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [comparacion]);
   // Flechas del teclado: recorren las placas sin salir del informe
   useEffect(() => {
     const handler = (e) => {
@@ -1009,59 +1046,119 @@ const RadiologistView = () => {
         )}
       </div>
 
-      {/* Comparación lado a lado con el estudio previo del mismo paciente */}
+      {/* Comparación lado a lado con los estudios previos del mismo paciente */}
       {comparacion && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(3,10,20,0.97)', display: 'flex', flexDirection: 'column' }}>
-          <header style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', background: 'linear-gradient(90deg, #003366, #0a4d8c)', color: '#fff' }}>
+          <header style={{ minHeight: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'linear-gradient(90deg, #003366, #0a4d8c)', color: '#fff', flexWrap: 'wrap' }}>
             <Icon name="eye" size={16} color="#fff" />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700 }}>Comparación radiológica — {paciente?.nombre}</div>
               <div style={{ fontSize: 10.5, opacity: 0.8 }}>
                 Actual: {selectedEstudio?.tipo_estudio} ({selectedEstudio?.fecha_estudio})
-                {comparacion.estudio ? ` · Previo: ${comparacion.estudio.tipo_estudio} (${comparacion.estudio.fecha_estudio})` : ''}
+                {(() => {
+                  const previo = !comparacion.cargando && comparacion.estudios?.[comparacion.indiceEstudio];
+                  return previo ? ` · Previo: ${previo.estudio.tipo_estudio} (${previo.estudio.fecha_estudio})` : '';
+                })()}
               </div>
             </div>
-            <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.14)', color: '#fff', gap: 5 }} onClick={() => setComparacion(null)}>
-              <Icon name="close" size={13} color="#fff" /> Cerrar comparación
+            <span style={{ fontSize: 11, opacity: 0.7 }}>Esc para salir · ← → para cambiar de placa</span>
+            <button
+              className="btn"
+              style={{ background: '#ef4444', color: '#fff', gap: 6, fontWeight: 800, padding: '8px 16px' }}
+              onClick={() => setComparacion(null)}
+              title="Salir de la comparación (Esc)"
+            >
+              <Icon name="close" size={14} color="#fff" /> Salir de la comparación
             </button>
           </header>
           {comparacion.cargando ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8fa9cc', fontSize: 13 }}>Buscando la radiografía previa...</div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8fa9cc', fontSize: 13 }}>Buscando las radiografías previas...</div>
           ) : (
-            <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
-                <div style={{ padding: '7px 12px', background: '#102b4d', color: '#8cc3ff', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>ESTUDIO ACTUAL</div>
-                {selectedImage ? (
-                  <PacsViewer
-                    key={`cmp-actual-${selectedImage}`}
-                    imageUrl={authenticatedFileUrl(selectedImage, user.token)}
-                    imageName={images.find(f => f.url === selectedImage)?.name}
-                    index={indiceImagen}
-                    total={images.length}
-                    onDownload={() => handleDescargarPlaca(selectedImage)}
-                    onPrevious={() => seleccionarRelativa(-1)}
-                    onNext={() => seleccionarRelativa(1)}
-                  />
-                ) : (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5f85', fontSize: 12.5 }}>Seleccione una placa del estudio actual.</div>
-                )}
+            <>
+              {/* Selector del estudio previo (cuando hay más de uno con placas) */}
+              {comparacion.estudios?.length > 1 && (
+                <div style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '8px 16px', background: '#0a1c33', overflowX: 'auto', alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: '#8fa9cc', fontWeight: 700, flexShrink: 0 }}>ESTUDIO PREVIO:</span>
+                  {comparacion.estudios.map((s, i) => (
+                    <button
+                      key={s.estudio.id}
+                      onClick={() => elegirEstudioPrevio(i)}
+                      style={{
+                        flexShrink: 0, borderRadius: 999, padding: '5px 13px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                        border: i === comparacion.indiceEstudio ? '2px solid #fbbf24' : '1px solid #2b4c7a',
+                        background: i === comparacion.indiceEstudio ? 'rgba(251,191,36,0.16)' : 'transparent',
+                        color: i === comparacion.indiceEstudio ? '#fde68a' : '#8fa9cc',
+                      }}
+                    >
+                      {s.estudio.tipo_estudio} · {s.estudio.fecha_estudio} ({s.archivos.length})
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
+                  <div style={{ padding: '7px 12px', background: '#102b4d', color: '#8cc3ff', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>ESTUDIO ACTUAL</div>
+                  {selectedImage ? (
+                    <PacsViewer
+                      key={`cmp-actual-${selectedImage}`}
+                      imageUrl={authenticatedFileUrl(selectedImage, user.token)}
+                      imageName={images.find(f => f.url === selectedImage)?.name}
+                      index={indiceImagen}
+                      total={images.length}
+                      onDownload={() => handleDescargarPlaca(selectedImage)}
+                      onPrevious={() => seleccionarRelativa(-1)}
+                      onNext={() => seleccionarRelativa(1)}
+                    />
+                  ) : (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5f85', fontSize: 12.5 }}>Seleccione una placa del estudio actual.</div>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '7px 12px', background: '#102b4d', color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>ESTUDIO PREVIO</div>
+                  {(() => {
+                    const previo = comparacion.estudios?.[comparacion.indiceEstudio];
+                    const imgs = previo?.archivos || [];
+                    const actual = imgs[comparacion.indiceImagen] || imgs[0];
+                    if (!actual) {
+                      return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5f85', fontSize: 12.5 }}>El estudio previo no tiene placas.</div>;
+                    }
+                    return (
+                      <>
+                        <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+                          <PacsViewer
+                            key={`cmp-previo-${previo.estudio.id}-${actual.name}`}
+                            imageUrl={authenticatedFileUrl(actual.url, user.token)}
+                            imageName={actual.name}
+                            index={comparacion.indiceImagen || 0}
+                            total={imgs.length}
+                            onDownload={() => downloadAuthenticatedFile(`/api/estudios/${previo.estudio.id}/archivos/${encodeURIComponent(actual.name)}/download`, user.token, actual.name).catch(err => addNotification('No se pudo descargar', err.message, 'error'))}
+                            onPrevious={() => seleccionarPreviaRelativa(-1)}
+                            onNext={() => seleccionarPreviaRelativa(1)}
+                          />
+                        </div>
+                        {imgs.length > 1 && (
+                          <div style={{ flexShrink: 0, display: 'flex', gap: 6, padding: '8px 12px', background: '#0a1c33', overflowX: 'auto', alignItems: 'center' }}>
+                            {imgs.map((f, i) => (
+                              <img
+                                key={f.name}
+                                src={authenticatedFileUrl(f.url, user.token)}
+                                alt={f.name}
+                                onClick={() => setComparacion(prev => (prev ? { ...prev, indiceImagen: i } : prev))}
+                                style={{
+                                  height: 56, width: 56, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', flexShrink: 0,
+                                  border: (comparacion.indiceImagen || 0) === i ? '2px solid #fbbf24' : '2px solid transparent',
+                                  opacity: (comparacion.indiceImagen || 0) === i ? 1 : 0.6,
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '7px 12px', background: '#102b4d', color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>ESTUDIO PREVIO</div>
-                {comparacion.archivo ? (
-                  <PacsViewer
-                    key={`cmp-previo-${comparacion.archivo.name}`}
-                    imageUrl={authenticatedFileUrl(comparacion.archivo.url, user.token)}
-                    imageName={comparacion.archivo.name}
-                    index={0}
-                    total={1}
-                    onDownload={() => downloadAuthenticatedFile(`/api/estudios/${comparacion.estudio.id}/archivos/${encodeURIComponent(comparacion.archivo.name)}/download`, user.token, comparacion.archivo.name).catch(err => addNotification('No se pudo descargar', err.message, 'error'))}
-                  />
-                ) : (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5f85', fontSize: 12.5 }}>El estudio previo no tiene placas.</div>
-                )}
-              </div>
-            </div>
+            </>
           )}
         </div>
       )}
