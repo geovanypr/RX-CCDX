@@ -62,7 +62,12 @@ const NotificationCenter = ({ variant = 'light' }) => {
           opacity: notificationsEnabled ? 1 : 0.6,
         }}
       >
-        <Icon name={notificationsEnabled ? 'bell' : 'x'} size={14} color={oscuro ? '#fff' : 'currentColor'} />
+        <Icon
+          name={notificationsEnabled ? 'bell' : 'x'}
+          size={oscuro ? 17 : 14}
+          color={oscuro ? '#fff' : 'currentColor'}
+          style={{ position: 'relative', zIndex: 1 }}
+        />
         {!oscuro && 'Avisos'}
         {notificationsEnabled && sinLeer > 0 && (
           <span style={{
