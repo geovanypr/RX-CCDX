@@ -171,6 +171,10 @@ img, video, canvas, svg { max-width: 100%; }
 /* ════════════════════════════════════════════
    RADIÓLOGO — header, paneles y visor
    ════════════════════════════════════════════ */
+
+/* Section tabs: hidden on desktop */
+.rx-section-tabs { display: none; }
+
 @media (max-width: 900px) {
   .rx-header { flex-wrap: wrap; height: auto !important; min-height: 56px; padding: 8px 10px !important; row-gap: 8px; }
   .rx-header-title h2 { font-size: 13px !important; }
@@ -179,11 +183,74 @@ img, video, canvas, svg { max-width: 100%; }
   .rx-header-actions::-webkit-scrollbar { display: none; }
   .rx-header-actions .btn, .rx-header-actions span { flex-shrink: 0; }
 
-  .rx-reader { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
-  .rx-pane-visor { width: 100% !important; min-height: 58dvh; border-right: none !important; border-bottom: 1px solid #1e3a5f; flex-shrink: 0; }
-  .rx-pane-editor, .rx-pane-comm { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--color-border); overflow: visible !important; flex-shrink: 0; }
-  .rx-pane-comm { min-height: 340px; padding-bottom: 90px; }
-  .rx-pane-editor { padding-bottom: 12px; }
+  /* ── Section tabs: visible on mobile ── */
+  .rx-section-tabs {
+    display: flex;
+    width: 100%;
+    flex-shrink: 0;
+    background: #0b1e36;
+    border-bottom: 1px solid #1e3a5f;
+    padding: 0;
+    z-index: 10;
+  }
+  .rx-section-tabs button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #64748b;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 11px 8px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .rx-section-tabs button.active {
+    color: #60a5fa;
+    border-bottom-color: #3399FF;
+    background: rgba(51, 153, 255, 0.06);
+  }
+
+  /* ── Layout: stacked, only active section visible ── */
+  .rx-reader {
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  .rx-section-hidden { display: none !important; }
+
+  .rx-pane-visor {
+    width: 100% !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rx-pane-editor {
+    width: 100% !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 90px;
+  }
+  .rx-pane-comm {
+    width: 100% !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    overflow: visible !important;
+    padding-bottom: 90px;
+  }
 
   .cmp-split { flex-direction: column !important; overflow-y: auto !important; }
   .cmp-pane { min-height: 44dvh; border-right: none !important; border-bottom: 1px solid #1e3a5f; }
@@ -495,7 +562,7 @@ img, video, canvas, svg { max-width: 100%; }
   .modal-body { padding-bottom: 24px !important; }
   .mobile-tabbar button { min-height: 46px; font-size: 0; gap: 0; }
   .mobile-tabbar button span:last-child { display: none; }
-  .rx-pane-visor { min-height: 70dvh; }
+  /* rx-pane-visor height is now managed by the section tab system */
   .auth-card { padding: 20px !important; }
   .brand-logo { max-width: 140px !important; margin-bottom: 8px !important; }
   .auth-brand { margin-bottom: 14px !important; }

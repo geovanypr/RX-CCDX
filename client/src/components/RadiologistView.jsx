@@ -72,6 +72,8 @@ const RadiologistView = () => {
   const [showDevolverModal, setShowDevolverModal] = useState(false);
   const [notaDevolucion, setNotaDevolucion] = useState('');
   const [submittingDevolver, setSubmittingDevolver] = useState(false);
+  // Secciones en móvil: 'visor' | 'informe' | 'info'
+  const [mobileSection, setMobileSection] = useState('visor');
   const { logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -785,8 +787,20 @@ const RadiologistView = () => {
           </div>
         ) : (
           <div className="rx-reader" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            {/* ---- Barra de secciones móvil ---- */}
+            <div className="rx-section-tabs">
+              <button className={mobileSection === 'visor' ? 'active' : ''} onClick={() => setMobileSection('visor')}>
+                <Icon name="eye" size={14} color="currentColor" /> Visor
+              </button>
+              <button className={mobileSection === 'informe' ? 'active' : ''} onClick={() => setMobileSection('informe')}>
+                <Icon name="fileText" size={14} color="currentColor" /> Informe
+              </button>
+              <button className={mobileSection === 'info' ? 'active' : ''} onClick={() => setMobileSection('info')}>
+                <Icon name="info" size={14} color="currentColor" /> Paciente
+              </button>
+            </div>
             {/* ---------- Izquierda: visor ---------- */}
-            <div className="rx-pane-visor" style={{ flex: 1, background: '#0d1f38', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
+            <div className={`rx-pane-visor${mobileSection !== 'visor' ? ' rx-section-hidden' : ''}`} style={{ flex: 1, background: '#0d1f38', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e3a5f' }}>
               {/* Visor PACS */}
               {selectedImage ? (
                 <PacsViewer
@@ -939,7 +953,7 @@ const RadiologistView = () => {
             </div>
 
             {/* ---------- Centro: editor estilo Word ---------- */}
-            <div className="rx-pane-editor" style={{ width: 400, flexShrink: 0, background: '#e8ecf3', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #cbd5e1' }}>
+            <div className={`rx-pane-editor${mobileSection !== 'informe' ? ' rx-section-hidden' : ''}`} style={{ width: 400, flexShrink: 0, background: '#e8ecf3', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid #cbd5e1' }}>
               <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column' }}>
                 <div className="paper" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 420 }}>
                   <div className="paper-letterhead">
@@ -1061,7 +1075,7 @@ const RadiologistView = () => {
             </div>
 
             {/* ---------- Derecha: comunicación ---------- */}
-            <div className="rx-pane-comm" style={{ width: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className={`rx-pane-comm${mobileSection !== 'info' ? ' rx-section-hidden' : ''}`} style={{ width: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <CommunicationPanel
                 estudio={selectedEstudio}
                 onFileUploaded={() => loadArchivos(selectedEstudio)}
