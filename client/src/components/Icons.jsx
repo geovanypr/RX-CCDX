@@ -58,6 +58,7 @@ const Icon = ({ name, size = 16, color = 'currentColor', className = '', style =
     ruler: <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" style={s} className={className}><path d="M15.5 2.5l6 6a1.5 1.5 0 010 2.12l-11 11a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l11-11a1.5 1.5 0 012.12 0z"/><line x1="7" y1="11" x2="9" y2="13"/><line x1="10" y1="8" x2="12" y2="10"/><line x1="13" y1="5" x2="15" y2="7"/></svg>,
     chevronUp: <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" style={s} className={className}><polyline points="18 15 12 9 6 15"/></svg>,
     chevronDown: <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" style={s} className={className}><polyline points="6 9 12 15 18 9"/></svg>,
+    filter: <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" style={s} className={className}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
     // Palomita simple (mensaje enviado, no leído)
     checkSent: <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" style={s} className={className}><polyline points="20 6 9 17 4 12"/></svg>,
     // Doble palomita (mensaje leído — estilo WhatsApp)

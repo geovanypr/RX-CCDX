@@ -697,6 +697,100 @@ body { -webkit-tap-highlight-color: transparent; }
 html.dark .toast { background: var(--color-surface) !important; }
 html.dark .toast > div > div:first-child { background: var(--color-surface-2) !important; border-color: var(--color-border) !important; }
 
+/* ── Carpetas plegables + botones grandes (solo móvil) ── */
+.carp-current, .carp-search-toggle { display: none; }
+@media (max-width: 900px) {
+  /* Barra compacta de la carpeta actual (solo cuando la lista está plegada) */
+  .carp-list.collapsed > :not(.carp-current) { display: none !important; }
+  .carp-list.collapsed .carp-current {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 14px;
+    min-height: 54px;
+    background: var(--color-info-bg);
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  /* Buscador plegable */
+  .carp-search-toggle {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 16px;
+    min-height: 48px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .carp-search-toggle .badge { margin-left: 2px; }
+  .carp-search-toggle svg:last-child { margin-left: auto; }
+  .carp-search { display: none !important; }
+  .carp-search.open { display: block !important; }
+  .carp-search form { gap: 8px; }
+  /* Historial plegable (cabecera siempre visible) */
+  .carp-hist-toggle { display: inline-flex !important; }
+  .carp-hist:not(.open) > :not(.carp-pager) { display: none !important; }
+  /* Objetivos táctiles en lista y paginación */
+  .carp-list-body .btn-xs { min-width: 40px; min-height: 40px; }
+  .carp-list-foot .btn { min-height: 44px; flex: 1; justify-content: center; }
+  .carp-head .btn { min-height: 46px; }
+}
+@media (max-width: 560px) {
+  /* Buscar apilado a todo ancho */
+  .carp-search form { flex-direction: column; align-items: stretch; }
+  .carp-search form > div { width: 100%; }
+  .carp-search form .btn { width: 100%; justify-content: center; min-height: 46px; }
+}
+
+/* ── Filtros plegables (Dashboard, solo móvil) ── */
+.filtros-toggle { display: none; }
+@media (max-width: 900px) {
+  .filtros-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: calc(100% - 24px);
+    margin: 10px 12px 0;
+    padding: 11px 14px;
+    min-height: 48px;
+    border-radius: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xs);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .filtros-toggle:active { transform: scale(0.99); }
+  .filtros-toggle .filtros-count {
+    margin-left: auto;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+  /* Plegado por defecto: solo se muestra con .open */
+  .dash-filters { display: none !important; }
+  .dash-filters.open { display: grid !important; }
+}
+
 /* ============================================================
    RX CCDX — Capa Responsive Móvil v4
    Remates: anula estilos inline fijos (!important vence al

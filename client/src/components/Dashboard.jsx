@@ -74,6 +74,8 @@ const Dashboard = () => {
   const [filtroRegion, setFiltroRegion] = useState('');
   const [soloUrgentes, setSoloUrgentes] = useState(false);
   const [filtroDesde, setFiltroDesde] = useState('');
+  // Móvil: el bloque de filtros es plegable (oculto por defecto para no ocupar pantalla)
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [topEstudios, setTopEstudios] = useState([]);
   const [entregandoLote, setEntregandoLote] = useState(false);
   const [centro, setCentro] = useState(null);
@@ -355,6 +357,7 @@ const Dashboard = () => {
     if (filtroDesde && e.fecha_estudio !== filtroDesde) return false;
     return true;
   });
+  const numFiltrosActivos = [filtroTipo, filtroRegion, filtroDesde, soloUrgentes ? 'urgentes' : ''].filter(Boolean).length;
 
   // Tipos de estudio únicos para el filtro
   const tiposUnicos = [...new Set(estudios.map(e => e.tipo_estudio).filter(Boolean))].sort();
@@ -611,9 +614,25 @@ const Dashboard = () => {
           )}
         </header>
 
-        {/* Barra de filtros (placas) */}
+        {/* Barra de filtros (placas): plegable en móvil */}
         {view === 'placas' && (
-          <div className="dash-filters" style={{ display: 'flex', gap: 10, padding: '10px 22px 0', alignItems: 'center', flexWrap: 'wrap' }}>
+          <>
+          <button
+            type="button"
+            className="filtros-toggle"
+            aria-expanded={filtrosAbiertos}
+            aria-controls="filtros-placas"
+            onClick={() => setFiltrosAbiertos(v => !v)}
+          >
+            <Icon name="filter" size={15} color="currentColor" />
+            Filtros
+            {numFiltrosActivos > 0 && (
+              <span className="badge badge-blue">{numFiltrosActivos} activo{numFiltrosActivos !== 1 ? 's' : ''}</span>
+            )}
+            <span className="filtros-count">{filteredEstudios.length} placas</span>
+            <Icon name={filtrosAbiertos ? 'chevronUp' : 'chevronDown'} size={15} color="currentColor" />
+          </button>
+          <div id="filtros-placas" className={`dash-filters${filtrosAbiertos ? ' open' : ''}`} style={{ display: 'flex', gap: 10, padding: '10px 22px 0', alignItems: 'center', flexWrap: 'wrap' }}>
             <select
               className="input"
               value={filtroTipo}
@@ -676,6 +695,7 @@ const Dashboard = () => {
               {filteredEstudios.length} de {estudios.length} placas en esta bandeja
             </span>
           </div>
+          </>
         )}
 
         {/* Barra de lote de entrega (solo en "Listo para imprimir") */}

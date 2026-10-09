@@ -42,6 +42,16 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
   const [historialTotal, setHistorialTotal] = useState(0);
   const [historialLoading, setHistorialLoading] = useState(false);
   const [borrandoHistorial, setBorrandoHistorial] = useState(false);
+  // Plegables en móvil (la lista y el historial ocupan mucha pantalla)
+  const esMovil = () => typeof window !== 'undefined' && window.innerWidth <= 900;
+  const [listaAbierta, setListaAbierta] = useState(true);
+  const [busquedaAbierta, setBusquedaAbierta] = useState(true);
+  const [histAbierto, setHistAbierto] = useState(() => typeof window === 'undefined' || window.innerWidth > 900);
+  const elegirCarpeta = (c) => {
+    // En móvil la lista se pliega sola para dejar sitio al detalle
+    if (esMovil()) setListaAbierta(false);
+    openDetalle(c);
+  };
 
   const headers = useMemo(() => ({ Authorization: `Bearer ${user.token}` }), [user.token]);
   const LIMIT = 20;
@@ -226,7 +236,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
           const response = await fetch(`${API_URL}/api/pacientes/${folder.id}`, { method: 'DELETE', headers });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || 'No se pudo eliminar la carpeta');
-          if (selected?.id === folder.id) { setSelected(null); setDetalle(null); }
+          if (selected?.id === folder.id) { setSelected(null); setDetalle(null); setListaAbierta(true); }
           fetchCarpetas();
         } catch (error) {
           console.error('[CarpetasVirtuales]', error.message);
@@ -283,8 +293,36 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
   return (
     <div className="carp-root" style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* ===== Lista de carpetas ===== */}
-      <div className="carp-list" style={{ width: 340, flexShrink: 0, borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', background: '#fff' }}>
-        {/* Búsqueda */}
+      <div className={`carp-list${listaAbierta ? '' : ' collapsed'}`} style={{ width: 340, flexShrink: 0, borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', background: 'var(--color-surface)' }}>
+        {/* Barra compacta (solo móvil cuando la lista está plegada) */}
+        {selected && (
+          <button
+            type="button"
+            className="carp-current"
+            onClick={() => setListaAbierta(v => !v)}
+            aria-expanded={listaAbierta}
+            title="Mostrar lista de carpetas"
+          >
+            <Icon name="folder" size={16} color="currentColor" />
+            <span className="ellipsis" style={{ flex: 1, fontWeight: 700, fontSize: 13 }}>{selected.nombre}</span>
+            <span className="chip mono" style={{ fontSize: 10 }}>{selected.registro_id}</span>
+            <Icon name={listaAbierta ? 'chevronUp' : 'chevronDown'} size={14} color="currentColor" />
+          </button>
+        )}
+        {/* Búsqueda plegable en móvil */}
+        <button
+          type="button"
+          className="carp-search-toggle"
+          aria-expanded={busquedaAbierta}
+          aria-controls="carp-busqueda"
+          onClick={() => setBusquedaAbierta(v => !v)}
+        >
+          <Icon name="search" size={14} color="currentColor" />
+          Buscar carpeta
+          {q.trim() && <span className="badge badge-blue">{total}</span>}
+          <Icon name={busquedaAbierta ? 'chevronUp' : 'chevronDown'} size={14} color="currentColor" />
+        </button>
+        <div id="carp-busqueda" className={`carp-search${busquedaAbierta ? ' open' : ''}`}>
         <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-border)' }}>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
             <div style={{ flex: 1, position: 'relative' }}>
@@ -308,9 +346,10 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
             {total} carpeta{total !== 1 ? 's' : ''} · página {page} de {pages}
           </p>
         </div>
+        </div>
 
         {/* Lista */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="carp-list-body" style={{ flex: 1, overflowY: 'auto' }}>
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
           ) : carpetas.length === 0 ? (
@@ -322,25 +361,25 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
           ) : carpetas.map(c => {
             const isActive = selected?.id === c.id;
             return (
-              <button
-                key={c.id}
-                onClick={() => openDetalle(c)}
+                <button
+                  key={c.id}
+                  onClick={() => elegirCarpeta(c)}
                 style={{
                   display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', textAlign: 'left',
-                  padding: '13px 16px', border: 'none', borderBottom: '1px solid #f1f5f9',
-                  background: isActive ? '#eff6ff' : '#fff', cursor: 'pointer',
+                  padding: '13px 16px', border: 'none', borderBottom: '1px solid var(--color-border)',
+                  background: isActive ? 'var(--color-info-bg)' : 'var(--color-surface)', cursor: 'pointer',
                   transition: 'background 0.12s ease', borderLeft: isActive ? '3px solid var(--color-secondary)' : '3px solid transparent',
                 }}
               >
                 <div style={{
                   width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                  background: isActive ? 'linear-gradient(135deg,#dbeafe,#bfdbfe)' : 'linear-gradient(135deg,#f1f5f9,#e2e8f0)',
+                  background: isActive ? 'linear-gradient(135deg,#1a66b3,#003366)' : 'var(--color-surface-3)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Icon name="folder" size={18} color={isActive ? '#1d4ed8' : '#64748b'} />
+                  <Icon name="folder" size={18} color={isActive ? '#fff' : 'var(--color-text-muted)'} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: isActive ? 'var(--color-primary)' : 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: isActive ? 'var(--color-secondary)' : 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.nombre}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
@@ -348,7 +387,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                   </div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 10.5, color: 'var(--color-text-muted)' }}>{c.edad} años · {c.sexo === 'F' ? 'F' : 'M'}</span>
-                    <span style={{ fontSize: 10.5, color: '#64748b' }}>{c.total_estudios} estudio{c.total_estudios !== 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--color-text-muted)' }}>{c.total_estudios} estudio{c.total_estudios !== 1 ? 's' : ''}</span>
                     {c.en_proceso > 0 && (
                       <span style={{ fontSize: 10, background: '#fff7ed', color: '#c2410c', padding: '1px 6px', borderRadius: 999, fontWeight: 700 }}>
                         {c.en_proceso} en proceso
@@ -374,7 +413,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
 
         {/* Paginación */}
         {pages > 1 && (
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc' }}>
+          <div className="carp-list-foot" style={{ padding: '12px 16px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-surface-2)' }}>
             <button
               className="btn btn-ghost btn-sm"
               disabled={page <= 1}
@@ -651,7 +690,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
               </div>
             )}
             {/* Historial de Acciones / Auditoría del paciente */}
-            <div className="card-flat" style={{ padding: 18, margin: 0 }}>
+            <div className={`card-flat carp-hist${histAbierto ? ' open' : ''}`} style={{ padding: 18, margin: 0 }}>
               <div className="carp-pager" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="clock" size={15} color="var(--color-primary)" />
@@ -659,6 +698,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                     Historial de Acciones ({historialTotal})
                   </span>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {userRole !== 'RADIOLOGO' && historialTotal > 0 && (
                   <button
                     className="btn btn-ghost btn-xs"
@@ -669,6 +709,16 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                     <Icon name="trash" size={12} /> {borrandoHistorial ? 'Borrando...' : 'Borrar historial'}
                   </button>
                 )}
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs carp-hist-toggle"
+                  onClick={() => setHistAbierto(v => !v)}
+                  aria-expanded={histAbierto}
+                  title={histAbierto ? 'Ocultar historial' : 'Mostrar historial'}
+                >
+                  <Icon name={histAbierto ? 'chevronUp' : 'chevronDown'} size={12} />
+                </button>
+                </div>
               </div>
 
               {historialLoading ? (
@@ -680,7 +730,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {historial.map(h => (
-                    <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f8fafc', borderRadius: 9, border: '1px solid var(--color-border)' }}>
+                    <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--color-surface-2)', borderRadius: 9, border: '1px solid var(--color-border)' }}>
                       <div style={{
                         width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
                         background: h.accion?.includes('ELIMINADO') || h.accion?.includes('DEVUELTO') ? '#ef4444'
@@ -690,8 +740,8 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 12.5, fontWeight: 700 }}>{h.accion}</span>
-                          <span style={{ fontSize: 11, color: '#64748b' }}>({h.usuario_nombre || 'Sistema'})</span>
+                            <span style={{ fontSize: 12.5, fontWeight: 700 }}>{h.accion}</span>
+                            <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>({h.usuario_nombre || 'Sistema'})</span>
                         </div>
                         {h.detalle && <p style={{ fontSize: 11.5, color: 'var(--color-text-muted)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.detalle}</p>}
                       </div>
