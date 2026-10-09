@@ -11,9 +11,15 @@ export const NotificationContext = createContext();
 export const NotificationProvider = ({ children }) => {
   const { user } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    return localStorage.getItem('rx_ccdx_notifications_enabled') !== 'false';
-  });
+  // Lectura blindada: en incógnito/restringido localStorage lanza y tumbaba el provider.
+  const leerFlagAvisos = () => {
+    try {
+      return localStorage.getItem('rx_ccdx_notifications_enabled') !== 'false';
+    } catch {
+      return true;
+    }
+  };
+  const [notificationsEnabled, setNotificationsEnabled] = useState(leerFlagAvisos);
   const [pendingRadiologo, setPendingRadiologo] = useState(0);
   const [pendingEncargado, setPendingEncargado] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -21,7 +27,11 @@ export const NotificationProvider = ({ children }) => {
   const listenersRef = useRef({});
 
   const addNotification = useCallback((title, message, type = 'default') => {
-    if (localStorage.getItem('rx_ccdx_notifications_enabled') === 'false') return;
+    try {
+      if (localStorage.getItem('rx_ccdx_notifications_enabled') === 'false') return;
+    } catch {
+      /* sin storage: se muestran igual */
+    }
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     // El toast se oculta a los 8 s; el aviso queda en el centro de notificaciones.
     setNotifications(prev => [
@@ -37,7 +47,11 @@ export const NotificationProvider = ({ children }) => {
   const toggleNotifications = useCallback(() => {
     setNotificationsEnabled(prev => {
       const next = !prev;
-      localStorage.setItem('rx_ccdx_notifications_enabled', String(next));
+      try {
+        localStorage.setItem('rx_ccdx_notifications_enabled', String(next));
+      } catch {
+        /* preferencia solo en memoria */
+      }
       if (!next) setNotifications([]);
       return next;
     });

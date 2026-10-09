@@ -5,6 +5,8 @@ import Icon from './Icons';
 import { API_URL, authenticatedFileUrl } from '../config';
 import Thumb from './Thumb';
 import { formatHora } from '../utils/format';
+import { fetchConTimeout, TIMEOUT_SUBIDA } from '../utils/apiClient';
+import { useEsTactil } from '../utils/useEsTactil';
 import { insertarEmoji } from '../utils/emoji';
 import EmojiPicker from './EmojiPicker';
 
@@ -79,6 +81,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
   const typingClearRef = useRef(null);
 
   const headers = { Authorization: `Bearer ${user.token}` };
+  const esTactil = useEsTactil();
 
   // Seguir el tema del documento
   useEffect(() => {
@@ -316,7 +319,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
     const fd = new FormData();
     for (const f of files) fd.append('archivos', f);
     try {
-      const res = await fetch(`${API_URL}/api/estudios/${estudio.id}/upload`, { method: 'POST', headers, body: fd });
+      const res = await fetchConTimeout(`${API_URL}/api/estudios/${estudio.id}/upload`, { method: 'POST', headers, body: fd }, TIMEOUT_SUBIDA);
       const d = await res.json();
       if (!res.ok || !d.success) throw new Error(d.error || 'No se pudieron cargar los archivos');
       const imageCount = d.files?.filter(f => f.isImage).length || 0;
@@ -772,7 +775,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
                   : <Icon name="upload" size={26} color={isDark ? '#8696a0' : 'var(--color-text-muted)'} />}
               </div>
               <p style={{ fontSize: 12, color: isDark ? '#8696a0' : 'var(--color-text-secondary)', margin: 0 }}>
-                {uploading ? 'Subiendo…' : 'Arrastra, haz clic o pega con Ctrl+V'}
+                {uploading ? 'Subiendo…' : (esTactil ? 'Toca para adjuntar fotos o archivos' : 'Arrastra, haz clic o pega con Ctrl+V')}
               </p>
               <p style={{ fontSize: 10.5, color: isDark ? '#667781' : 'var(--color-text-muted)', marginTop: 3 }}>Imágenes, PDF, Word, TXT — máx. 50 MB</p>
             </div>

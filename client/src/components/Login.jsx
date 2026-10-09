@@ -125,7 +125,7 @@ const Login = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              autoFocus
+              autoFocus={typeof window === 'undefined' || window.matchMedia?.('(hover: hover)').matches !== false}
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"

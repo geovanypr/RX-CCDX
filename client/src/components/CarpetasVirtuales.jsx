@@ -16,7 +16,7 @@ const InformeViewer = lazyConReintento(() => import('./InformeViewer'));
 
 const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
   const { user } = useContext(AuthContext);
-  const { on, off } = useContext(NotificationContext);
+  const { on, off, addNotification } = useContext(NotificationContext);
   const [carpetas, setCarpetas] = useState([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -163,7 +163,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
           if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo borrar el historial');
           loadHistorial(selected.id, 1);
         } catch (error) {
-          console.error('[CarpetasVirtuales]', error.message);
+          addNotification('No se pudo borrar el historial', error.message, 'error');
         } finally {
           setBorrandoHistorial(false);
         }
@@ -184,7 +184,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
           if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo eliminar la entrada');
           loadHistorial(selected.id, historialPage);
         } catch (error) {
-          console.error('[CarpetasVirtuales]', error.message);
+          addNotification('No se pudo eliminar el evento', error.message, 'error');
         }
       },
     });
@@ -220,7 +220,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
       if (selected?.id === folder.id) openDetalle({ ...folder, nombre: nombreLimpio });
     } catch (error) {
       // Notificar sin alert nativo
-      console.error('[CarpetasVirtuales]', error.message);
+      addNotification('No se pudo modificar la carpeta', error.message, 'error');
     }
     finally { setFolderAction(null); }
   };
@@ -238,8 +238,9 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
           if (!response.ok) throw new Error(data.error || 'No se pudo eliminar la carpeta');
           if (selected?.id === folder.id) { setSelected(null); setDetalle(null); setListaAbierta(true); }
           fetchCarpetas();
+          addNotification('Expediente eliminado', `Se eliminó "${folder.nombre}".`, 'success');
         } catch (error) {
-          console.error('[CarpetasVirtuales]', error.message);
+          addNotification('No se pudo eliminar el expediente', error.message, 'error');
         }
         finally { setFolderAction(null); }
       },
@@ -250,8 +251,9 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
     setDownloading(true);
     try {
       await downloadAuthenticatedFile(`/api/carpetas/${pacienteId}/download`, user.token, `${selected.nombre}_${selected.registro_id}_expediente.zip`);
+      addNotification('Descarga iniciada', 'La carpeta se está descargando.', 'success');
     } catch (error) {
-      console.error('[CarpetasVirtuales] descarga carpeta:', error.message);
+      addNotification('No se pudo descargar la carpeta', error.message, 'error');
     } finally {
       setDownloading(false);
     }
@@ -262,8 +264,9 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
     setDescargandoPlacas(true);
     try {
       await downloadAuthenticatedFile(`/api/pacientes/${pacienteId}/radiografias/download`, user.token, `placas_${selected.nombre}_${selected.registro_id}.zip`);
+      addNotification('Descarga iniciada', 'Las radiografías se están descargando.', 'success');
     } catch (error) {
-      console.error('[CarpetasVirtuales] descarga radiografías:', error.message);
+      addNotification('No se pudieron descargar las radiografías', error.message, 'error');
     } finally {
       setDescargandoPlacas(false);
     }
@@ -275,7 +278,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
     try {
       await downloadAuthenticatedFile(`/api/pacientes/${selected.id}/archivos/${encodeURIComponent(archivo.name)}/download`, user.token, archivo.name);
     } catch (error) {
-      console.error('[CarpetasVirtuales] descarga archivo:', error.message);
+      addNotification('No se pudo descargar el archivo', error.message, 'error');
     }
   };
 

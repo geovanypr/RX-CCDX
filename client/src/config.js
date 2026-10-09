@@ -23,6 +23,16 @@ export async function downloadAuthenticatedFile(path, token, fallbackName = 'des
   if (fallbackName) {
     link.setAttribute('download', fallbackName);
   }
+  // En táctil (iOS ignora el atributo download) abrir en pestaña nueva para
+  // no sacar al usuario de la app al previsualizar el archivo.
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(hover: none) and (pointer: coarse)').matches) {
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener');
+    }
+  } catch {
+    /* descarga normal */
+  }
   document.body.appendChild(link);
   link.click();
   setTimeout(() => {

@@ -5,6 +5,8 @@ import Icon from './Icons';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
 import Thumb from './Thumb';
 import { sexoLabel, formatHora, formatFechaHora } from '../utils/format';
+import { fetchConTimeout, TIMEOUT_SUBIDA } from '../utils/apiClient';
+import { useEsTactil } from '../utils/useEsTactil';
 import ConfirmDialog from './ConfirmDialog';
 import { lazyConReintento } from '../utils/lazyConReintento';
 
@@ -68,6 +70,7 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
   const msgInputRef = useRef(null);
 
   const headers = { Authorization: `Bearer ${user.token}` };
+  const esTactil = useEsTactil();
 
   const loadArchivos = useCallback(() => {
     fetch(`${API_URL}/api/estudios/${estudio.id}/archivos`, { headers })
@@ -253,11 +256,11 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
     const formData = new FormData();
     for (const f of fileList) formData.append('archivos', f);
     try {
-      const res = await fetch(`${API_URL}/api/estudios/${estudio.id}/upload`, {
+      const res = await fetchConTimeout(`${API_URL}/api/estudios/${estudio.id}/upload`, {
         method: 'POST',
         headers,
         body: formData,
-      });
+      }, TIMEOUT_SUBIDA);
       let d;
       try {
         d = await res.json();
@@ -614,7 +617,7 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
                   {uploadingFiles ? <div className="spinner" style={{ width: 26, height: 26 }} /> : <Icon name="upload" size={32} color="var(--color-text-muted)" />}
                 </div>
                 <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
-                  {uploadingFiles ? 'Subiendo archivos...' : 'Arrastra archivos aquí, haz clic para seleccionar, o pega imágenes con Ctrl+V'}
+                  {uploadingFiles ? 'Subiendo archivos...' : (esTactil ? 'Toca para elegir fotos o archivos de la galería' : 'Arrastra archivos aquí, haz clic para seleccionar, o pega imágenes con Ctrl+V')}
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 6 }}>Imágenes, PDFs, TXT, documentos (máx. 50MB por archivo)</p>
               </div>

@@ -66,6 +66,12 @@ export function playNotificationSound(type = 'default') {
 }
 
 export function enableSound() {
-  const ctx = getAudioContext();
-  if (ctx.state === 'suspended') ctx.resume();
+  // Sin try/catch esto tumbaba el login y el provider en iOS/dispositivos
+  // sin WebAudio (el constructor lanza y el submit moría antes del fetch).
+  try {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+  } catch {
+    /* audio no disponible: la app sigue sin sonido */
+  }
 }

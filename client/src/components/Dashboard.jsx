@@ -9,6 +9,7 @@ import ConfirmDialog from './ConfirmDialog';
 import MobileTabBar from './MobileTabBar';
 import { useSwipeClose, useDrawerAutoClose } from '../utils/useDrawer';
 import { useVisibleRefetch } from '../utils/useVisibleRefetch';
+import { useEsTactil } from '../utils/useEsTactil';
 import Icon from './Icons';
 import { regionDeTipo } from '../utils/catalogoRadiologia';
 import { FASES, FASE_META, ESTADO_COLORS, getEstadoColors } from '../utils/constants';
@@ -399,6 +400,8 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  // En táctil los atajos de teclado no existen: textos y ayudas se adaptan.
+  const esTactil = useEsTactil();
   // Gesto táctil: deslizar a la izquierda para cerrar. Auto-cierre al pasar a escritorio.
   useSwipeClose(sidebarRef, closeSidebar, sidebarOpen);
   useDrawerAutoClose(closeSidebar);
@@ -576,7 +579,7 @@ const Dashboard = () => {
                 ref={searchRef}
                 type="text"
                 className="input"
-                placeholder="Buscar por paciente, ID, estudio... (Ctrl+K)"
+                placeholder={esTactil ? 'Buscar por paciente, ID o estudio…' : 'Buscar por paciente, ID, estudio... (Ctrl+K)'}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 autoCorrect="off"

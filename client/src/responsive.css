@@ -200,7 +200,7 @@ img, video, canvas, svg { max-width: 100%; }
     justify-content: flex-start !important;
   }
   .pacs-topbar > *, .pacs-bottombar > * { flex-shrink: 0; }
-  .pacs-hint { display: none !important; }
+  .pacs-hint { font-size: 10px !important; }
 }
 
 /* ════════════════════════════════════════════
@@ -245,7 +245,13 @@ img, video, canvas, svg { max-width: 100%; }
 /* ── Formularios: 1 columna + campos grandes ── */
 @media (max-width: 640px) {
   .input, select.input, textarea.input { font-size: 16px !important; padding: 12px 14px !important; }
+  /* Los buscadores con lupa NO pierden su sangría: el !important de arriba
+     pisaba el padding-inline y el texto quedaba debajo del icono */
   .search-wrapper .input { padding-left: 38px !important; }
+  .topbar-search .input { padding-left: 34px !important; }
+  .carp-search .input { padding-left: 34px !important; }
+  .rx-worklist .input { padding-left: 32px !important; }
+  .password-wrapper .input { padding-right: 42px !important; }
   .field-label { font-size: 13px !important; }
   .wizard-step-label { display: none; }
   .kpi-value { font-size: 24px; }

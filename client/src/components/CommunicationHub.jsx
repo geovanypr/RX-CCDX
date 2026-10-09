@@ -5,6 +5,7 @@ import Icon from './Icons';
 import { API_URL, authenticatedFileUrl } from '../config';
 import Thumb from './Thumb';
 import { formatHora } from '../utils/format';
+import { fetchConTimeout, TIMEOUT_SUBIDA } from '../utils/apiClient';
 import { insertarEmoji } from '../utils/emoji';
 import EmojiPicker from './EmojiPicker';
 
@@ -254,7 +255,7 @@ const CommunicationHub = ({ onClose }) => {
     form.append('archivo', file);
     if (text.trim()) form.append('contenido', text.trim());
     try {
-      const res = await fetch(`${API_URL}/api/comunicacion/archivos`, { method: 'POST', headers, body: form });
+      const res = await fetchConTimeout(`${API_URL}/api/comunicacion/archivos`, { method: 'POST', headers, body: form }, TIMEOUT_SUBIDA);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'No se pudo adjuntar');
       setText('');

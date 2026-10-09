@@ -13,6 +13,32 @@ const RUTAS_SIN_SESION = /\/api\/auth\/(login|recover)|\/api\/usuarios\/me/;
 
 let instalado = false;
 
+// Tiempos máximos de espera: en redes móviles la conexión se puede colgar
+// y fetch esperaría para siempre (spinners eternos, "no se envía nada").
+export const TIMEOUT_API = 45000;
+export const TIMEOUT_SUBIDA = 5 * 60 * 1000;
+
+const esSocketIO = (url) => url.includes('/socket.io/');
+
+const errorTimeout = () =>
+  new Error('Tiempo de espera agotado. Verifique su conexión e intente de nuevo.');
+
+/**
+ * fetch con tiempo máximo: aborta y rechaza con un error legible si el
+ * servidor no responde a tiempo. Respeta una signal propia si se provee.
+ */
+export const fetchConTimeout = (recurso, opciones = {}, ms = TIMEOUT_API) => {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(errorTimeout()), ms);
+  const externa = opciones.signal;
+  if (externa) {
+    if (externa.aborted) ctrl.abort(externa.reason);
+    else externa.addEventListener('abort', () => ctrl.abort(externa.reason), { once: true });
+  }
+  return fetch(recurso, { ...opciones, signal: ctrl.signal })
+    .finally(() => clearTimeout(timer));
+};
+
 export const instalarInterceptorSesion = () => {
   if (instalado || typeof window === 'undefined' || typeof window.fetch !== 'function') return;
   instalado = true;
@@ -31,7 +57,21 @@ export const instalarInterceptorSesion = () => {
       opcionesFinales = { ...opciones, headers };
     }
 
-    const respuesta = await fetchOriginal(recurso, opcionesFinales);
+    const respuesta = await (async () => {
+      // Sin signal propia: timeout por defecto (45 s) para no colgarse en
+      // redes móviles. Se excluye socket.io (polling con espera larga) y las
+      // subidas, que proveen su propio timeout más generoso.
+      if (esApi && !esSocketIO(url) && !opcionesFinales.signal) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(errorTimeout()), TIMEOUT_API);
+        try {
+          return await fetchOriginal(recurso, { ...opcionesFinales, signal: ctrl.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      return fetchOriginal(recurso, opcionesFinales);
+    })();
 
     if (
       respuesta.status === 401 &&

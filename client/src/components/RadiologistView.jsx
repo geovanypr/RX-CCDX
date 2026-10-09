@@ -15,6 +15,7 @@ import MobileTabBar from './MobileTabBar';
 import Thumb from './Thumb';
 import { useSwipeClose, useDrawerAutoClose } from '../utils/useDrawer';
 import { useVisibleRefetch } from '../utils/useVisibleRefetch';
+import { useEsTactil } from '../utils/useEsTactil';
 import PacsViewer from './PacsViewer';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
 import { parseFechaServidor } from '../utils/format';
@@ -83,6 +84,7 @@ const RadiologistView = () => {
   const selectedEstudioRef = useRef(null);
 
   const headers = { Authorization: `Bearer ${user.token}` };
+  const esTactil = useEsTactil();
 
   const fetchEstudios = useCallback(() => {
     setLoading(true);
@@ -1017,7 +1019,7 @@ const RadiologistView = () => {
                         lineHeight: 1.7, border: '1px solid #d3dbe7', marginBottom: 0, minHeight: 180,
                         background: '#fffef7',
                       }}
-                      placeholder="Redacte el diagnóstico aquí, o use una plantilla arriba. También puede pegar (Ctrl+V)."
+                      placeholder={esTactil ? 'Redacte el diagnóstico aquí o use una plantilla arriba.' : 'Redacte el diagnóstico aquí, o use una plantilla arriba. También puede pegar (Ctrl+V).'}
                       value={diagnostico}
                       onChange={e => setDiagnostico(e.target.value)}
                     />

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icons';
+import { useEsTactil } from '../utils/useEsTactil';
 
 // Preajustes de ventana (brillo/contraste) habituales en radiología convencional.
 const PRESETS = [
@@ -19,6 +20,7 @@ const MAX_ZOOM = 6;
  */
 const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload, onPrevious, onNext }) => {
   const [zoom, setZoom] = useState(1);
+  const esTactil = useEsTactil();
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [brightness, setBrightness] = useState(1);
   const [contrast, setContrast] = useState(1);
@@ -99,8 +101,23 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
 
   const toggleFullscreen = () => {
     if (!rootRef.current) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else rootRef.current.requestFullscreen?.();
+    if (document.fullscreenElement) {
+      try {
+        const p = document.exitFullscreen();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch { /* salir como se pueda */ }
+      return;
+    }
+    if (pseudoFull) { setPseudoFull(false); return; }
+    const el = rootRef.current;
+    const pedir = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
+    if (!pedir) { setPseudoFull(true); return; } // iPhone: sin fullscreen nativo
+    try {
+      const p = pedir();
+      if (p?.catch) p.catch(() => setPseudoFull(true));
+    } catch {
+      setPseudoFull(true);
+    }
   };
 
   const calcularAngulo = (p1, p2, p3) => {
@@ -117,6 +134,15 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
   // Pinch-to-zoom táctil: mapa de punteros activos + distancia inicial
   const pointersRef = useRef(new Map());
   const pinchRef = useRef(null);
+  // Pseudo-fullscreen para iPhone (sin Element.requestFullscreen): ocupa
+  // todo el viewport; Escape o el mismo botón sale.
+  const [pseudoFull, setPseudoFull] = useState(false);
+  useEffect(() => {
+    if (!pseudoFull) return;
+    const salir = (e) => { if (e.key === 'Escape') setPseudoFull(false); };
+    window.addEventListener('keydown', salir);
+    return () => window.removeEventListener('keydown', salir);
+  }, [pseudoFull]);
   // Doble toque para acercar/alejar (móvil/tablet)
   const lastTapRef = useRef({ t: 0, x: 0, y: 0 });
   const downRef = useRef({ t: 0, x: 0, y: 0 });
@@ -268,7 +294,10 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
   };
 
   return (
-    <div ref={rootRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#060d1c', overflow: 'hidden' }}>
+    <div ref={rootRef} style={pseudoFull
+      ? { position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: 6000, display: 'flex', flexDirection: 'column', background: '#060d1c', overflow: 'hidden', paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }
+      : { flex: 1, display: 'flex', flexDirection: 'column', background: '#060d1c', overflow: 'hidden' }
+    }>
       
       {/* PANEL SUPERIOR: Herramientas e Información (0% Overlays) */}
       <div className="pacs-topbar" style={{
@@ -503,13 +532,13 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
         <span className="pacs-hint" style={{ flex: 1 }} />
         
         <span className="pacs-hint" style={{ fontSize: 10.5, color: '#5f7ba0' }}>
-          {herramienta === 'angulo' 
-            ? 'Arrastre para trazar la primera línea, luego arrastre para la segunda.' 
-            : herramienta === 'distancia' 
-              ? 'Arrastre sobre la imagen para medir distancia.' 
-              : zoom > 1 
-                ? 'Arrastre · rueda = zoom' 
-                : 'Rueda del mouse para zoom'}
+            {herramienta === 'angulo'
+              ? 'Arrastre para trazar la primera línea, luego arrastre para la segunda.'
+              : herramienta === 'distancia'
+                ? 'Arrastre sobre la imagen para medir distancia.'
+                : zoom > 1
+                  ? (esTactil ? 'Arrastre · pellizca = zoom' : 'Arrastre · rueda = zoom')
+                  : (esTactil ? 'Pellizca o toca 2 veces = zoom' : 'Rueda del mouse para zoom')}
         </span>
       </div>
     </div>

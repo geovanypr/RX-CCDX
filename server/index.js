@@ -714,7 +714,7 @@ app.get('/api/comunicacion/archivos/:filename', authenticateToken, (req, res) =>
   if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'Archivo no encontrado' });
   if (req.query.thumb === '1') {
     if (!/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(fullPath)) return res.status(415).json({ error: 'No es imagen' });
-    return servirMiniatura(req, res, fullPath, path.join(communicationDir, '.thumbs'));
+    return servirMiniatura(req, res, fullPath, path.join(communicationDir, 'thumbs'));
   }
   res.setHeader('Cache-Control', 'private, no-store');
   res.sendFile(fullPath);
@@ -1453,10 +1453,12 @@ function servirMiniatura(req, res, filePath, cacheDir) {
     const thumbPath = path.join(cacheDir, safeName);
     // El nombre incluye el mtime: si se reemplaza el archivo, cambia la ruta
     // y el navegador no reutiliza una miniatura vieja.
+    // OJO: no usar directorios ocultos (".thumbs"): res.sendFile ignora
+    // dotfiles por defecto y responde 404 aunque el archivo exista.
     if (fs.existsSync(thumbPath)) {
       res.setHeader('Cache-Control', 'private, max-age=86400');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-      return res.sendFile(thumbPath);
+      return res.sendFile(thumbPath, (err) => { if (err && !res.headersSent) enviarOriginal(); });
     }
     fs.mkdirSync(cacheDir, { recursive: true });
     sharp(filePath)
@@ -1467,9 +1469,9 @@ function servirMiniatura(req, res, filePath, cacheDir) {
       .then(() => {
         res.setHeader('Cache-Control', 'private, max-age=86400');
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-        res.sendFile(thumbPath);
+        res.sendFile(thumbPath, (err) => { if (err && !res.headersSent) enviarOriginal(); });
       })
-      .catch(() => enviarOriginal());
+      .catch((err) => { console.error('[thumb-fallback]', err && err.message); enviarOriginal(); });
   } catch {
     enviarOriginal();
   }
@@ -1487,7 +1489,7 @@ app.get('/api/estudios/:id/archivos/:filename/view', authenticateDownload, (req,
     if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return res.status(404).json({ error: 'Archivo no encontrado' });
     if (req.query.thumb === '1') {
       if (!/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(filePath)) return res.status(415).json({ error: 'No es imagen' });
-      return servirMiniatura(req, res, filePath, path.join(folderPath, '.thumbs'));
+      return servirMiniatura(req, res, filePath, path.join(folderPath, 'thumbs'));
     }
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');

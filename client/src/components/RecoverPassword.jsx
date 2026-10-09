@@ -91,7 +91,7 @@ const RecoverPassword = () => {
             </p>
             <div>
               <label className="field-label">Usuario</label>
-              <input type="text" className="input" value={username} onChange={e => setUsername(e.target.value)} required autoFocus autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" />
+              <input type="text" className="input" value={username} onChange={e => setUsername(e.target.value)} required autoFocus={typeof window === 'undefined' || window.matchMedia?.('(hover: hover)').matches !== false} autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" />
             </div>
             <button type="submit" className="btn btn-primary btn-lg btn-block">Buscar Usuario</button>
           </form>
