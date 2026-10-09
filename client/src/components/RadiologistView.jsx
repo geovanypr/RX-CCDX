@@ -87,7 +87,7 @@ const RadiologistView = () => {
   const esTactil = useEsTactil();
 
   const fetchEstudios = useCallback(() => {
-    setLoading(true);
+    // setLoading(true);
     const fetchPromise = worklistFiltro === 'todos'
       ? fetch(`${API_URL}/api/estudios`, { headers }).then(r => r.json())
       : Promise.all(
