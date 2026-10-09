@@ -110,7 +110,7 @@ const RadiologistView = () => {
       if (worklistFiltro === 'pendientes') setPendingRadiologo(all.length);
       setSelectedEstudio(prev => {
         if (all.length === 0) return null;
-        if (prev && all.find(e => e.id === prev.id)) return prev;
+        if (prev) { const updated = all.find(e => e.id === prev.id); if (updated) return updated; }
         return all[0];
       });
     }).catch(() => {})

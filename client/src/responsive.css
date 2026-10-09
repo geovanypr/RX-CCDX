@@ -307,12 +307,14 @@ img, video, canvas, svg { max-width: 100%; }
     position: fixed;
     left: 0; right: 0; bottom: 0;
     z-index: 4500;
-    background: var(--color-surface);
-    border-top: 1px solid var(--color-border);
-    box-shadow: 0 -8px 24px -8px rgba(0, 51, 102, 0.18);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(226, 232, 240, 0.6);
+    box-shadow: 0 -12px 32px -8px rgba(0, 51, 102, 0.15);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
   }
-  html.dark .mobile-tabbar { box-shadow: 0 -8px 24px -8px rgba(0, 0, 0, 0.6); }
+  html.dark .mobile-tabbar { background: rgba(15, 23, 42, 0.85); box-shadow: 0 -12px 32px -8px rgba(0, 0, 0, 0.6); border-top-color: rgba(255,255,255,0.05); }
   .mobile-tabbar button {
     flex: 1;
     display: flex; flex-direction: column; align-items: center; gap: 3px;

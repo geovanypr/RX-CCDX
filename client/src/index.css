@@ -182,6 +182,10 @@ h1, h2, h3, h4, h5 {
 .btn:hover:not(:disabled)::after { background: rgba(255,255,255,0.07); }
 .btn:active:not(:disabled)::after { background: rgba(0,0,0,0.06); }
 
+.btn:active {
+  transform: scale(0.96);
+}
+
 .btn:disabled { opacity: 0.52; cursor: not-allowed; }
 .btn:focus-visible { outline: none; box-shadow: var(--shadow-glow); }
 
