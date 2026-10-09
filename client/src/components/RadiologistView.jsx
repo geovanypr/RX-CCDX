@@ -833,7 +833,7 @@ const RadiologistView = () => {
                 </div>
               )}
 
-              <div style={{ padding: '10px 14px', background: '#102b4d', borderTop: '1px solid #1e3a5f', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="rx-visor-actions" style={{ padding: '10px 14px', background: '#102b4d', borderTop: '1px solid #1e3a5f', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: '#dbeafe', fontSize: 11.5, fontWeight: 700 }}>Radiografías del estudio</div>
                   <div style={{ color: '#7fa5d1', fontSize: 10.5, marginTop: 2 }}>{images.length ? `${images.length} lista(s) para compartir` : 'Adjunte imágenes en “Archivos y envío”'}</div>
@@ -859,7 +859,7 @@ const RadiologistView = () => {
               </div>
 
               {/* Info del paciente */}
-              <div style={{ background: '#0f2b4e', padding: '14px 16px', borderTop: '1px solid #1e3a5f' }}>
+              <div className="rx-visor-info" style={{ background: '#0f2b4e', padding: '14px 16px', borderTop: '1px solid #1e3a5f' }}>
                 {isDevuelta && paciente.nota_revision && (
                   <div style={{ padding: '10px 14px', background: 'rgba(244,63,94,0.12)', borderRadius: 10, borderLeft: '4px solid #f43f5e', marginBottom: 12 }}>
                     <strong style={{ fontSize: 11, color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Nota de corrección del encargado</strong>

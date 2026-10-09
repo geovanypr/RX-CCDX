@@ -914,8 +914,6 @@ html.dark .toast > div > div:first-child { background: var(--color-surface-2) !i
   .study-file-row { flex-wrap: wrap !important; }
   .study-file-row > div:last-child { width: 100%; display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .study-file-row > div:last-child .btn { justify-content: center; }
-  .modal-footer .flex-1 { display: none !important; }
-  .modal-footer .btn { flex: 1 1 100%; justify-content: center; }
 }
 
 /* ── 10. Centro de notificaciones: cabecera con wrap ── */
@@ -960,3 +958,108 @@ html.dark .toast > div > div:first-child { background: var(--color-surface-2) !i
   .modal-footer { padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important; }
   .dash-list, .dash-page { padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
 }
+
+/* ============================================================
+   RONDA 7 — Fix sidebar scroll + RadiologistView visor móvil
+   ============================================================ */
+
+/* ── 16. Sidebar: scroll completo en móvil para alcanzar "Cerrar sesión" ── */
+@media (max-width: 900px) {
+  /* El sidebar como drawer ya tiene overflow-y: auto.
+     Pero .sidebar-nav tiene flex:1 + overflow-y:auto, lo que impide
+     que el footer (con "Cerrar sesión") sea alcanzable si la pantalla
+     es corta. Solución: toda la sidebar es un bloque de scroll único. */
+  .sidebar-nav {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+  }
+  .sidebar-footer {
+    flex-shrink: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* ── 17. RadiologistView: visor de imágenes optimizado para móvil ── */
+@media (max-width: 900px) {
+  /* El visor ocupa más del viewport para que la radiografía se vea bien */
+  .rx-pane-visor {
+    min-height: 64dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  /* El área de la imagen (PacsViewer) recibe todo el espacio libre */
+  .rx-pane-visor > div:first-child {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+  /* La barra de info/envío debajo de las miniaturas se hace compacta */
+  .rx-visor-actions {
+    padding: 8px 10px !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+  .rx-visor-actions .btn {
+    font-size: 11.5px !important;
+    padding: 7px 10px !important;
+  }
+  /* Info del paciente más compacta */
+  .rx-visor-info {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* En teléfonos pequeños, aún más espacio para la imagen */
+@media (max-width: 640px) {
+  .rx-pane-visor {
+    min-height: 56dvh !important;
+  }
+  /* Miniaturas más compactas */
+  .rx-thumbs {
+    height: auto !important;
+    min-height: 80px !important;
+    padding: 6px 8px !important;
+  }
+  .rx-thumbs .rx-thumb {
+    height: 64px !important;
+    width: 64px !important;
+  }
+  /* Barra de herramientas PACS: más compacta */
+  .pacs-topbar {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+  .pacs-topbar .btn {
+    padding: 4px 7px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+  .pacs-bottombar {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+  .pacs-bottombar button {
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+    min-height: 34px !important;
+  }
+  .pacs-bottombar label {
+    padding: 3px 8px !important;
+    font-size: 10px !important;
+  }
+  /* Ocultar los hints del PACS en pantallas muy pequeñas */
+  .pacs-hint { display: none !important; }
+  /* Barra de acción: botones con wrap para no quedar apretados */
+  .rx-visor-actions {
+    flex-wrap: wrap !important;
+  }
+  .rx-visor-actions > div:first-child {
+    flex: 1 1 100% !important;
+  }
+  .rx-visor-actions .btn {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+  }
+}
+
