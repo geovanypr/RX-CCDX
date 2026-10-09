@@ -10,7 +10,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const sesion = readSession();
     if (sesion) {
-      setUser(sesion);
+      const normalizedRole = sesion.role ? sesion.role.toUpperCase().replace('ENCARGADA', 'ENCARGADO') : '';
+      setUser({ ...sesion, role: normalizedRole });
     }
     setLoading(false);
 
@@ -38,7 +39,8 @@ export const AuthProvider = ({ children }) => {
   const login = (data, remember) => {
     const recordar = remember === undefined ? getRememberChoice() : !!remember;
     writeSession(data, recordar);
-    setUser({ token: data.token, role: data.role, username: data.username, id: data.id ?? null });
+    const normalizedRole = data.role ? data.role.toUpperCase().replace('ENCARGADA', 'ENCARGADO') : '';
+    setUser({ token: data.token, role: normalizedRole, username: data.username, id: data.id ?? null });
   };
 
   const logout = () => {

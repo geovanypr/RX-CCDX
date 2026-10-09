@@ -694,12 +694,16 @@ tbody tr:last-child td { border-bottom: none; }
 .auth-card {
   position: relative;
   width: 420px;
-  max-width: calc(100vw - 40px);
-  background: rgba(255, 255, 255, 0.99);
+  max-width: calc(100vw - 32px);
+  background: rgba(10, 25, 45, 0.45);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-radius: var(--radius-2xl);
-  box-shadow: 0 32px 80px -20px rgba(2, 12, 32, 0.55), 0 0 0 1px rgba(255,255,255,0.5);
-  padding: 40px 38px;
-  animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 32px 80px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 44px 38px;
+  animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #fff;
 }
 
 .auth-brand {
@@ -747,15 +751,15 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .brand-name {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
-  color: var(--color-primary);
-  letter-spacing: -0.025em;
+  color: #fff;
+  letter-spacing: -0.02em;
 }
 
 .brand-tagline {
-  font-size: 12.5px;
-  color: var(--color-text-muted);
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.75);
   margin-top: 4px;
   letter-spacing: 0.02em;
   text-align: center;
@@ -765,7 +769,34 @@ tbody tr:last-child td { border-bottom: none; }
   margin-top: 22px;
   text-align: center;
   font-size: 12.5px;
-  color: var(--color-text-muted);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.auth-card .field-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-card .input {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.auth-card .input:focus {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(102, 184, 255, 0.15);
+}
+
+.auth-card .input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.auth-card .btn-primary {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary-light) 100%);
+  border: none;
+  box-shadow: 0 6px 16px -4px rgba(51, 153, 255, 0.4);
+  color: #fff;
 }
 
 /* ════════════════════════════════════════════
