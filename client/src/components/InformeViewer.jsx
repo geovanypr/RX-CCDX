@@ -485,7 +485,7 @@ const InformeViewer = ({ estudio, userRole, onClose, onSaved, autoPrint = false 
         </div>
 
         {/* Body */}
-        <div className="modal-body" style={{ background: '#e8ecf3', padding: '20px 24px', overflowY: 'auto' }}>
+        <div className="modal-body informe-body" style={{ background: '#e8ecf3', padding: '20px 24px', overflowY: 'auto' }}>
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
               <div className="spinner" />
@@ -595,7 +595,7 @@ const InformeViewer = ({ estudio, userRole, onClose, onSaved, autoPrint = false 
                   }}>
                     Informe e Interpretación Radiológica
                   </div>
-                  <div style={{
+                  <div className="informe-text" style={{
                     fontFamily: '"Times New Roman", Times, serif',
                     fontSize: 14.5, lineHeight: 1.85, color: '#111827',
                     whiteSpace: 'pre-wrap', minHeight: 120,
@@ -625,7 +625,7 @@ const InformeViewer = ({ estudio, userRole, onClose, onSaved, autoPrint = false 
 
                   {/* Nota de trazabilidad */}
                   {data.estado && (
-                    <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94a3b8' }}>
+                    <div className="paper-trace" style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94a3b8' }}>
                       <Icon name="info" size={12} color="#94a3b8" />
                       Estado: {data.estado} · Fecha: {data.fecha_estudio}
                       {data.estado === 'Entregado' && ' · Entregado al paciente'}

@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL, authenticatedFileUrl } from '../config';
+import Thumb from './Thumb';
 import { formatHora } from '../utils/format';
 import { insertarEmoji } from '../utils/emoji';
 import EmojiPicker from './EmojiPicker';
@@ -492,7 +493,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
                     return (
                       <div
                         key={m.id}
-                        className={isMine ? 'chat-bubble-mine' : 'chat-bubble-other'}
+                        className={`${isMine ? 'chat-bubble-mine' : 'chat-bubble-other'} comm-bubble-row`}
                         style={{
                           display: 'flex',
                           justifyContent: isMine ? 'flex-end' : 'flex-start',
@@ -662,7 +663,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
             )}
 
             {/* ── Input de mensaje ── */}
-            <div style={{
+            <div className="comm-panel-input" style={{
               padding: '8px 10px', flexShrink: 0,
               background: isDark ? '#1f2c34' : '#f0f2f5',
               display: 'flex', alignItems: 'flex-end', gap: 7,
@@ -705,6 +706,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
                 <textarea
                   ref={msgInputRef}
                   value={nuevoMensaje}
+                  enterKeyHint="send"
                   onChange={e => handleTyping(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Mensaje…"
@@ -798,10 +800,10 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
                 <p style={{ fontSize: 10, color: isDark ? '#8696a0' : 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontWeight: 700 }}>Radiografías</p>
                 <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
                   {images.map(f => (
-                    <img key={f.name} src={authenticatedFileUrl(f.url, user.token)} alt={f.name}
+                    <Thumb key={f.name} url={f.url} token={user.token} alt={f.name}
                       onClick={() => setLightbox(authenticatedFileUrl(f.url, user.token))}
                       style={{ width: 76, height: 76, objectFit: 'cover', borderRadius: 10, cursor: 'zoom-in', border: `2px solid ${isDark ? '#2a3942' : 'var(--color-border)'}`, flexShrink: 0 }}
-                      onError={e => { e.target.style.display = 'none'; }} />
+                    />
                   ))}
                 </div>
               </div>
@@ -838,10 +840,10 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
 
         {/* ── Lightbox ── */}
         {lightbox && (
-          <div onClick={() => setLightbox(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(6,16,32,0.95)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
-            <img src={lightbox} alt="Vista ampliada" style={{ maxWidth: '92vw', maxHeight: '82vh', objectFit: 'contain', borderRadius: 10, boxShadow: 'var(--shadow-lg)' }} />
+          <div onClick={() => setLightbox(null)} className="comm-lightbox" style={{ position: 'fixed', inset: 0, background: 'rgba(6,16,32,0.95)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
+            <img src={lightbox} alt="Vista ampliada" className="comm-lightbox-img" style={{ maxWidth: '92vw', maxHeight: '82vh', objectFit: 'contain', borderRadius: 10, boxShadow: 'var(--shadow-lg)' }} />
             {/* Controles del lightbox */}
-            <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', bottom: 24, display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div onClick={e => e.stopPropagation()} className="comm-lightbox-bar" style={{ position: 'absolute', bottom: 24, display: 'flex', gap: 10, alignItems: 'center' }}>
               <a
                 href={lightbox}
                 download
@@ -859,7 +861,7 @@ const CommunicationPanel = ({ estudio, onClose, onFileUploaded }) => {
                 <Icon name="download" size={15} color="#fff" /> Descargar
               </a>
             </div>
-            <button onClick={() => setLightbox(null)} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => setLightbox(null)} aria-label="Cerrar imagen ampliada" className="comm-lightbox-close" style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="close" size={20} color="#fff" />
             </button>
           </div>

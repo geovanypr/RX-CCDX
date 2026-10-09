@@ -712,6 +712,10 @@ app.get('/api/comunicacion/archivos/:filename', authenticateToken, (req, res) =>
   if (!file) return res.status(404).json({ error: 'Archivo no encontrado' });
   const fullPath = path.join(communicationDir, filename);
   if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'Archivo no encontrado' });
+  if (req.query.thumb === '1') {
+    if (!/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(fullPath)) return res.status(415).json({ error: 'No es imagen' });
+    return servirMiniatura(req, res, fullPath, path.join(communicationDir, '.thumbs'));
+  }
   res.setHeader('Cache-Control', 'private, no-store');
   res.sendFile(fullPath);
 });
@@ -1423,6 +1427,54 @@ app.get('/api/estudios/:id/archivos', authenticateToken, (req, res) => {
   }
 });
 
+// Miniaturas livianas (?thumb=1) para listados en móvil: servir la imagen
+// completa en una miniatura de 70px descarga varios MB por foto.
+// sharp se carga de forma perezosa: si no está disponible, se sirve el
+// original sin romper nada.
+function getSharp() {
+  try { return require('sharp'); } catch { return null; }
+}
+
+function servirMiniatura(req, res, filePath, cacheDir) {
+  const enviarOriginal = () => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    return res.sendFile(filePath);
+  };
+  try {
+    const sharp = getSharp();
+    if (!sharp) return enviarOriginal();
+    // Ahorro de datos de Android (Chrome envía Save-Data: on): miniatura
+    // aún más liviana para redes móviles limitadas.
+    const ahorro = req.headers['save-data'] === 'on';
+    const lado = ahorro ? 240 : 320;
+    const calidad = ahorro ? 55 : 70;
+    const stat = fs.statSync(filePath);
+    const safeName = `${path.basename(filePath).replace(/[^a-zA-Z0-9._-]/g, '_')}.${Math.floor(stat.mtimeMs)}.${ahorro ? 'sd' : 'std'}.thumb.jpg`;
+    const thumbPath = path.join(cacheDir, safeName);
+    // El nombre incluye el mtime: si se reemplaza el archivo, cambia la ruta
+    // y el navegador no reutiliza una miniatura vieja.
+    if (fs.existsSync(thumbPath)) {
+      res.setHeader('Cache-Control', 'private, max-age=86400');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      return res.sendFile(thumbPath);
+    }
+    fs.mkdirSync(cacheDir, { recursive: true });
+    sharp(filePath)
+      .rotate()
+      .resize(lado, lado, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: calidad, mozjpeg: true })
+      .toFile(thumbPath)
+      .then(() => {
+        res.setHeader('Cache-Control', 'private, max-age=86400');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.sendFile(thumbPath);
+      })
+      .catch(() => enviarOriginal());
+  } catch {
+    enviarOriginal();
+  }
+}
+
 // Visualización autenticada de un archivo. Las etiquetas <img> no pueden
 // enviar el header Authorization, por eso el cliente añade el token a la URL.
 app.get('/api/estudios/:id/archivos/:filename/view', authenticateDownload, (req, res) => {
@@ -1433,6 +1485,10 @@ app.get('/api/estudios/:id/archivos/:filename/view', authenticateDownload, (req,
     const filePath = path.resolve(folderPath, req.params.filename);
     if (!filePath.startsWith(path.resolve(folderPath) + path.sep)) return res.status(403).json({ error: 'Acceso denegado' });
     if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return res.status(404).json({ error: 'Archivo no encontrado' });
+    if (req.query.thumb === '1') {
+      if (!/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(filePath)) return res.status(415).json({ error: 'No es imagen' });
+      return servirMiniatura(req, res, filePath, path.join(folderPath, '.thumbs'));
+    }
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
     // Permitir que <img> de otro origen (Vercel) cargue el archivo.

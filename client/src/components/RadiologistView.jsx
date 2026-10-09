@@ -11,6 +11,10 @@ import ThemeToggle from './ThemeToggle';
 const CommunicationHub = lazyConReintento(() => import('./CommunicationHub'));
 const InformeViewer = lazyConReintento(() => import('./InformeViewer'));
 import Icon from './Icons';
+import MobileTabBar from './MobileTabBar';
+import Thumb from './Thumb';
+import { useSwipeClose, useDrawerAutoClose } from '../utils/useDrawer';
+import { useVisibleRefetch } from '../utils/useVisibleRefetch';
 import PacsViewer from './PacsViewer';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
 import { parseFechaServidor } from '../utils/format';
@@ -40,6 +44,10 @@ const RadiologistView = () => {
   const [worklistSearch, setWorklistSearch] = useState('');
   // Worklist como drawer en móvil
   const [worklistOpen, setWorklistOpen] = useState(false);
+  const worklistRef = useRef(null);
+  const closeWorklist = useCallback(() => setWorklistOpen(false), []);
+  useSwipeClose(worklistRef, closeWorklist, worklistOpen);
+  useDrawerAutoClose(closeWorklist);
   const [selectedEstudio, setSelectedEstudio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -110,6 +118,9 @@ const RadiologistView = () => {
   useEffect(() => {
     fetchEstudios();
   }, [worklistFiltro]);
+
+  // Al volver a la app se revalida la lista (el teléfono se bloquea a cada rato).
+  useVisibleRefetch(fetchEstudios);
 
   const loadArchivos = useCallback((estudio) => {
     if (!estudio) { setArchivos([]); return; }
@@ -524,9 +535,9 @@ const RadiologistView = () => {
   }, [comparacion, indiceImagen, selectedImage, images.length, selectedEstudio?.id]);
 
   return (
-    <div className="app-container" style={{ position: 'relative', background: '#0d1f38', width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-container has-tabbar" style={{ position: 'relative', background: '#0d1f38', width: '100%', height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* ============ Header ============ */}
-      <header style={{
+      <header className="rx-header" style={{
         flexShrink: 0, height: 60, zIndex: 2500,
         background: 'linear-gradient(90deg, #003366, #0a4d8c)',
         display: 'flex', alignItems: 'center', padding: '0 20px', color: '#fff',
@@ -538,16 +549,16 @@ const RadiologistView = () => {
         <div className="sidebar-brand" style={{ marginRight: 12 }}>
           <img className="brand-img" src="/logo.png" alt="RX CCDX" />
         </div>
-        <div>
+        <div className="rx-header-title">
           <h2 style={{ fontSize: 15.5, margin: 0, color: '#fff' }}>RX CCDX — Estación de Lectura</h2>
           <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>RX CCDX</p>
         </div>
         {pendingRadiologo > 0 && (
-          <span style={{ marginLeft: 16, background: '#ef4444', color: '#fff', borderRadius: 999, padding: '3px 12px', fontSize: 12, fontWeight: 700, animation: 'pulse 2s infinite', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span className="rx-pending-badge" style={{ marginLeft: 16, background: '#ef4444', color: '#fff', borderRadius: 999, padding: '3px 12px', fontSize: 12, fontWeight: 700, animation: 'pulse 2s infinite', display: 'flex', alignItems: 'center', gap: 5 }}>
             <Icon name="bell" size={11} color="#fff" /> {pendingRadiologo} pendiente{pendingRadiologo > 1 ? 's' : ''}
           </span>
         )}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="rx-header-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           {/* Solo para el superadmin que entró desde su portal */}
           {esVistaAdmin && (
             <button
@@ -570,7 +581,7 @@ const RadiologistView = () => {
           >
             <Icon name={isDark ? 'sun' : 'moon'} size={13} color="#fff" />
           </button>
-          <span style={{ fontSize: 12.5, opacity: 0.8 }}>Dr. Alcántara</span>
+          <span className="rx-user-label" style={{ fontSize: 12.5, opacity: 0.8 }}>Dr. Alcántara</span>
           <button className="btn btn-sm" style={{ background: '#fff', color: '#075399', gap: 5, fontWeight: 800 }} onClick={() => setIsRegisterOpen(true)}>
             <Icon name="plus" size={14} color="#075399" /> Nuevo estudio
           </button>
@@ -593,7 +604,7 @@ const RadiologistView = () => {
 
       <div style={{ display: 'flex', width: '100%', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* ============ Worklist ============ */}
-        <div className={`rx-worklist${worklistOpen ? ' open' : ''}`} style={{
+        <div ref={worklistRef} className={`rx-worklist${worklistOpen ? ' open' : ''}`} style={{
           width: 290, background: '#0f2b4e', color: '#fff', display: 'flex', flexDirection: 'column',
           flexShrink: 0, borderRight: '1px solid #1e3a5f', height: '100%', overflow: 'hidden'
         }}>
@@ -800,13 +811,15 @@ const RadiologistView = () => {
 
               {/* Miniaturas */}
               {images.length > 0 && (
-                <div style={{ height: 92, background: '#0f2b4e', display: 'flex', gap: 6, padding: 10, overflowX: 'auto', alignItems: 'center', borderTop: '1px solid #1e3a5f' }}>
+                <div className="rx-thumbs" style={{ height: 92, background: '#0f2b4e', display: 'flex', gap: 6, padding: 10, overflowX: 'auto', alignItems: 'center', borderTop: '1px solid #1e3a5f' }}>
                   {images.map(f => (
-                    <img
+                    <Thumb
                       key={f.name}
-                      src={authenticatedFileUrl(f.url, user.token)}
+                      url={f.url}
+                      token={user.token}
                       alt={f.name}
                       onClick={() => setSelectedImage(f.url)}
+                      className="rx-thumb"
                       style={{
                         height: 70, width: 70, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', flexShrink: 0,
                         border: selectedImage === f.url ? '2px solid #3399FF' : '2px solid transparent',
@@ -1147,13 +1160,15 @@ const RadiologistView = () => {
                           />
                         </div>
                         {imgs.length > 1 && (
-                          <div style={{ flexShrink: 0, display: 'flex', gap: 6, padding: '8px 12px', background: '#0a1c33', overflowX: 'auto', alignItems: 'center' }}>
+                          <div className="rx-thumbs" style={{ flexShrink: 0, display: 'flex', gap: 6, padding: '8px 12px', background: '#0a1c33', overflowX: 'auto', alignItems: 'center' }}>
                             {imgs.map((f, i) => (
-                              <img
+                              <Thumb
                                 key={f.name}
-                                src={authenticatedFileUrl(f.url, user.token)}
+                                url={f.url}
+                                token={user.token}
                                 alt={f.name}
                                 onClick={() => setComparacion(prev => (prev ? { ...prev, indiceImagen: i } : prev))}
+                                className="rx-thumb"
                                 style={{
                                   height: 56, width: 56, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', flexShrink: 0,
                                   border: (comparacion.indiceImagen || 0) === i ? '2px solid #fbbf24' : '2px solid transparent',
@@ -1293,6 +1308,22 @@ const RadiologistView = () => {
           />
         )}
       </Suspense>
+
+      <MobileTabBar
+        active="lista"
+        onSelect={(id) => {
+          if (id === 'lista') { setWorklistOpen(true); return; }
+          if (id === 'nuevo') { setIsRegisterOpen(true); return; }
+          if (id === 'mensajes') { setIsCommunicationOpen(true); setUnreadMessages(0); return; }
+          if (id === 'ajustes') { setIsSettingsOpen(true); return; }
+        }}
+        buttons={[
+          { id: 'lista', icon: 'list', label: 'Lista', badge: pendingRadiologo },
+          { id: 'nuevo', icon: 'plus', label: 'Nuevo', fab: true },
+          { id: 'mensajes', icon: 'message', label: 'Chat', badge: unreadMessages },
+          { id: 'ajustes', icon: 'settings', label: 'Ajustes' },
+        ]}
+      />
 
       <style>{`
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }

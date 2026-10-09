@@ -6,6 +6,9 @@ import CommunicationPanel from './CommunicationPanel';
 import NotificationCenter from './NotificationCenter';
 import ThemeToggle from './ThemeToggle';
 import ConfirmDialog from './ConfirmDialog';
+import MobileTabBar from './MobileTabBar';
+import { useSwipeClose, useDrawerAutoClose } from '../utils/useDrawer';
+import { useVisibleRefetch } from '../utils/useVisibleRefetch';
 import Icon from './Icons';
 import { regionDeTipo } from '../utils/catalogoRadiologia';
 import { FASES, FASE_META, ESTADO_COLORS, getEstadoColors } from '../utils/constants';
@@ -177,6 +180,19 @@ const Dashboard = () => {
       .catch(() => {});
   }, [headers]);
 
+  // Al volver a la app (desbloquear el teléfono, cambiar de app) se revalida
+  // para no mostrar una bandeja vieja.
+  const refetchAlVolver = useCallback(() => {
+    fetchEstudios(); fetchStats(); fetchAllCounts(); fetchPendingCounts();
+    if (view === 'pacientes') buscarPacientes(pacienteBusqueda, 1);
+  }, [fetchEstudios, fetchStats, fetchAllCounts, fetchPendingCounts, view, buscarPacientes, pacienteBusqueda]);
+  useVisibleRefetch(refetchAlVolver);
+
+  // Render incremental: bandejas enormes no congelan el teléfono.
+  const PAGE_PLACAS = 60;
+  const [visiblePlacas, setVisiblePlacas] = useState(PAGE_PLACAS);
+  useEffect(() => { setVisiblePlacas(PAGE_PLACAS); }, [activeFase, search, filtroTipo, filtroRegion, filtroDesde, soloUrgentes, view]);
+
   useEffect(() => { fetchEstudios(); }, [fetchEstudios]);
   useEffect(() => { fetchStats(); fetchAllCounts(); fetchReportes(); fetchEntregas(); fetchTopEstudios(); fetchConfig(); }, [fetchStats, fetchAllCounts, fetchReportes, fetchEntregas, fetchTopEstudios, fetchConfig]);
 
@@ -343,6 +359,7 @@ const Dashboard = () => {
   // Tipos de estudio únicos para el filtro
   const tiposUnicos = [...new Set(estudios.map(e => e.tipo_estudio).filter(Boolean))].sort();
   const regionesUnicas = [...new Set(estudios.map(e => e.region || regionDeTipo(e.tipo_estudio)).filter(Boolean))].sort();
+  const placasVisibles = filteredEstudios.slice(0, visiblePlacas);
 
   // Días transcurridos en el estado actual (SLA operativo)
   const diasEnEstado = (e) => {
@@ -377,12 +394,17 @@ const Dashboard = () => {
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
   // Drawer lateral en móvil (el CSS lo convierte en overlay ≤900px)
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef(null);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  // Gesto táctil: deslizar a la izquierda para cerrar. Auto-cierre al pasar a escritorio.
+  useSwipeClose(sidebarRef, closeSidebar, sidebarOpen);
+  useDrawerAutoClose(closeSidebar);
   useEffect(() => { setSidebarOpen(false); }, [view, activeFase]);
 
   return (
-    <div className="app-container" style={{ position: 'relative' }}>
+    <div className="app-container has-tabbar" style={{ position: 'relative' }}>
       {/* ============ Sidebar ============ */}
-      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
+      <aside ref={sidebarRef} className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <img className="brand-img" src="/logo.png" alt="RX CCDX" />
@@ -481,7 +503,7 @@ const Dashboard = () => {
       <div className="main-content">
         {/* Modo supervisión: solo visible para el superadmin que entró desde su portal */}
         {esVistaAdmin && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'linear-gradient(90deg, #2e1065, #4c1d95)', color: '#fff', borderRadius: 12, padding: '9px 14px', marginBottom: 12 }}>
+          <div className="admin-banner" style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'linear-gradient(90deg, #2e1065, #4c1d95)', color: '#fff', borderRadius: 12, padding: '9px 14px', marginBottom: 12 }}>
             <Icon name="shield" size={15} color="#e9d5ff" />
             <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>Modo supervisión — ves la bandeja de Encargada como Super Administrador</span>
             <button className="btn btn-sm" onClick={() => { limpiarOrigenAdmin(); navigate('/admin'); }} style={{ background: '#fff', color: '#4c1d95', fontWeight: 800, gap: 5 }}>
@@ -543,7 +565,7 @@ const Dashboard = () => {
           )}
 
           {view === 'placas' ? (
-            <div style={{ position: 'relative' }}>
+            <div className="topbar-search" style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
                 <Icon name="search" size={14} color="var(--color-text-muted)" />
               </div>
@@ -554,11 +576,14 @@ const Dashboard = () => {
                 placeholder="Buscar por paciente, ID, estudio... (Ctrl+K)"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 style={{ width: 250, paddingLeft: 32 }}
               />
             </div>
           ) : view === 'pacientes' ? (
-            <div style={{ position: 'relative' }}>
+            <div className="topbar-search" style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
                 <Icon name="search" size={14} color="var(--color-text-muted)" />
               </div>
@@ -568,6 +593,9 @@ const Dashboard = () => {
                 placeholder="Buscar paciente por nombre o registro..."
                 value={pacienteBusqueda}
                 onChange={e => setPacienteBusqueda(e.target.value)}
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 style={{ width: 250, paddingLeft: 32 }}
               />
             </div>
@@ -577,15 +605,15 @@ const Dashboard = () => {
           <ThemeToggle variant="topbar" />
 
           {isEncargado && view === 'placas' && (
-            <button className="btn btn-primary" onClick={() => setIsModalOpen(true)} style={{ gap: 6 }}>
-              <Icon name="plus" size={15} color="#fff" /> Registrar Placa
+            <button className="btn btn-primary topbar-register" onClick={() => setIsModalOpen(true)} style={{ gap: 6 }}>
+              <Icon name="plus" size={15} color="#fff" /> <span className="btn-label-full">Registrar Placa</span><span className="btn-label-short">Nuevo</span>
             </button>
           )}
         </header>
 
         {/* Barra de filtros (placas) */}
         {view === 'placas' && (
-          <div style={{ display: 'flex', gap: 10, padding: '10px 22px 0', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="dash-filters" style={{ display: 'flex', gap: 10, padding: '10px 22px 0', alignItems: 'center', flexWrap: 'wrap' }}>
             <select
               className="input"
               value={filtroTipo}
@@ -652,7 +680,7 @@ const Dashboard = () => {
 
         {/* Barra de lote de entrega (solo en "Listo para imprimir") */}
         {view === 'placas' && activeFase === 'Listo para imprimir' && isEncargado && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 22px 0' }}>
+          <div className="lote-bar" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 22px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
               <span className="chip" style={{ background: '#eff6ff', borderColor: '#bfdbfe', color: '#003366', gap: 6 }}>
                 <Icon name="package" size={13} color="#003366" />
@@ -718,7 +746,7 @@ const Dashboard = () => {
         )}
 
         {/* ============ Cuerpo ============ */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div className="dash-body" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
           {/* ---------- VISTA CARPETAS ---------- */}
           {view === 'carpetas' ? (
@@ -748,7 +776,7 @@ const Dashboard = () => {
             </Suspense>
           ) : view === 'pacientes' ? (
             /* ---------- VISTA PACIENTES ---------- */
-            <div style={{ flex: 1, height: '100%', minHeight: 0, overflowY: 'auto', padding: '20px 22px' }}>
+            <div className="dash-page" style={{ flex: 1, height: '100%', minHeight: 0, overflowY: 'auto', padding: '20px 22px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <h3 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
@@ -978,7 +1006,7 @@ const Dashboard = () => {
           ) : (
             <>
               {/* ---------- IZQUIERDA: tabla ---------- */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>
+              <div className="dash-list" style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>
                 <div className="table-shell" style={{ margin: 0 }}>
                   <div className="table-wrap">
                     <table>
@@ -1020,7 +1048,7 @@ const Dashboard = () => {
                               </div>
                             </td>
                           </tr>
-                        ) : filteredEstudios.map(est => {
+                        ) : placasVisibles.map(est => {
                           const isActive = selectedEstudio?.id === est.id;
                           const ec = ESTADO_COLORS[activeFase] || ESTADO_COLORS['Recibida'];
                           const dias = diasEnEstado(est);
@@ -1037,7 +1065,7 @@ const Dashboard = () => {
                               style={{ cursor: 'pointer', boxShadow: est.urgente ? 'inset 3px 0 0 #ef4444' : undefined }}
                             >
                               {activeFase === 'Listo para imprimir' && isEncargado && (
-                                <td onClick={e => e.stopPropagation()}>
+                                <td data-label="" onClick={e => e.stopPropagation()}>
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
@@ -1046,10 +1074,10 @@ const Dashboard = () => {
                                   />
                                 </td>
                               )}
-                              <td>
+                              <td data-label="Registro">
                                 <span className="mono font-bold" style={{ color: 'var(--color-primary)', fontSize: 12.5 }}>{est.registro_id}</span>
                               </td>
-                              <td style={{ fontWeight: 600, fontSize: 13.5 }}>
+                              <td data-label="Paciente" style={{ fontWeight: 600, fontSize: 13.5 }}>
                                 {est.nombre}
                                 {est.urgente ? (
                                   <span className="badge badge-red" style={{ marginLeft: 8, fontSize: 9.5, padding: '2px 7px', verticalAlign: 'middle' }}>
@@ -1057,14 +1085,14 @@ const Dashboard = () => {
                                   </span>
                                 ) : null}
                               </td>
-                              <td>
+                              <td data-label="Estudio">
                                 <span className="badge" style={{ background: ec.bg, color: ec.text, fontSize: 11.5 }}>
                                   <span className="badge-dot" style={{ background: ec.dot }} />
                                   {est.tipo_estudio}
                                 </span>
                               </td>
-                              <td style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{est.fecha_estudio}</td>
-                              <td style={{ fontSize: 12 }}>
+                              <td data-label="Fecha" style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{est.fecha_estudio}</td>
+                              <td data-label="Entrega" style={{ fontSize: 12 }}>
                                 {est.fecha_entrega_estimada ? (
                                   <span
                                     title={est.estado === 'Entregado' ? 'Estudio entregado' : 'Fecha de entrega estimada (ciclo miércoles → martes)'}
@@ -1079,7 +1107,7 @@ const Dashboard = () => {
                                   <span style={{ color: 'var(--color-text-muted)' }}>—</span>
                                 )}
                               </td>
-                              <td>
+                              <td data-label="En estado">
                                 {sla && (
                                   <span
                                     className="badge"
@@ -1090,8 +1118,8 @@ const Dashboard = () => {
                                   </span>
                                 )}
                               </td>
-                              <td style={{ fontSize: 12.5, color: 'var(--color-text-secondary)' }}>{est.medico_remitente}</td>
-                              <td onClick={e => e.stopPropagation()}>
+                              <td data-label="Médico ref." style={{ fontSize: 12.5, color: 'var(--color-text-secondary)' }}>{est.medico_remitente}</td>
+                              <td data-label="Acciones" onClick={e => e.stopPropagation()}>
                                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                                   {isEncargado && activeFase !== 'Devuelta por revisión' && est.estado !== 'Devuelta por revisión' && activeFase !== 'Enviada al radiólogo' && activeFase !== 'Diagnóstico recibido' && activeFase !== 'Listo para imprimir' && activeFase !== 'Entregado' && (
                                     <button className="btn btn-warning btn-xs" onClick={() => handleEnviarRadiologo(est.id)} style={{ gap: 4 }}>
@@ -1158,10 +1186,20 @@ const Dashboard = () => {
                     </table>
                   </div>
                 </div>
+                {visiblePlacas < filteredEstudios.length && (
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '14px 0 4px', flexWrap: 'wrap' }}>
+                    <button className="btn btn-ghost" onClick={() => setVisiblePlacas(v => v + PAGE_PLACAS)} style={{ gap: 6 }}>
+                      Mostrar más ({filteredEstudios.length - visiblePlacas} restantes)
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setVisiblePlacas(filteredEstudios.length)}>
+                      Mostrar todo
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* ---------- DERECHA: reportes + calendario ---------- */}
-              <div style={{
+              <div className="dash-aside" style={{
                 width: 336, flexShrink: 0, borderLeft: '1px solid var(--color-border)',
                 overflowY: 'auto', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 14, padding: '18px 16px',
               }}>
@@ -1265,7 +1303,7 @@ const Dashboard = () => {
         )}
       </Suspense>
       {selectedEstudio && (
-        <div className="animate-slide-in" style={{ width: 340, flexShrink: 0, borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fff', position: 'absolute', top: 'var(--topbar-height)', bottom: 0, right: 0, zIndex: 50, boxShadow: '-12px 0 32px -12px rgba(15,23,42,0.25)' }}>
+        <div className="animate-slide-in dash-comm-drawer" style={{ width: 340, flexShrink: 0, borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fff', position: 'absolute', top: 'var(--topbar-height)', bottom: 0, right: 0, zIndex: 50, boxShadow: '-12px 0 32px -12px rgba(15,23,42,0.25)' }}>
           <CommunicationPanel
             estudio={selectedEstudio}
             onClose={() => setSelectedEstudio(null)}
@@ -1308,6 +1346,23 @@ const Dashboard = () => {
           />
         )}
       </Suspense>
+
+      {/* ── Barra de navegación inferior (solo móvil) ── */}
+      <MobileTabBar
+        active={view}
+        onSelect={(id) => {
+          if (id === 'nuevo') { setRegistrationPatient(null); setIsModalOpen(true); return; }
+          if (id === 'mensajes') { setIsCommunicationOpen(true); setUnreadMessages(0); return; }
+          setView(id);
+        }}
+        buttons={[
+          { id: 'placas', icon: 'xray', label: 'Placas' },
+          { id: 'pacientes', icon: 'users', label: 'Pacientes' },
+          ...(isEncargado ? [{ id: 'nuevo', icon: 'plus', label: 'Nuevo', fab: true }] : []),
+          { id: 'carpetas', icon: 'folder', label: 'Carpetas' },
+          { id: 'mensajes', icon: 'message', label: 'Chat', badge: unreadMessages },
+        ]}
+      />
 
       {/* ── Modal de confirmación (reemplaza window.confirm) ── */}
       {confirmDialog && (
@@ -1682,11 +1737,11 @@ const PacienteExpedienteModal = ({ paciente, onClose, headers, onUpdated, onDele
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 12 }}>
                 <div>
                   <label className="field-label" htmlFor="pac-tel">Teléfono</label>
-                  <input id="pac-tel" className="input" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="(000) 000-0000" />
+                  <input id="pac-tel" className="input" inputMode="tel" autoComplete="tel" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="(000) 000-0000" />
                 </div>
                 <div>
                   <label className="field-label" htmlFor="pac-mail">Correo</label>
-                  <input id="pac-mail" type="email" className="input" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} placeholder="paciente@correo.com" />
+                  <input id="pac-mail" type="email" className="input" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} placeholder="paciente@correo.com" />
                 </div>
               </div>
               <div>

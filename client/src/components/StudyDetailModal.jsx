@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
+import Thumb from './Thumb';
 import { sexoLabel, formatHora, formatFechaHora } from '../utils/format';
 import ConfirmDialog from './ConfirmDialog';
 import { lazyConReintento } from '../utils/lazyConReintento';
@@ -626,7 +627,7 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {archivos.map(f => (
-                    <div key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f8fafc', borderRadius: 12, border: '1px solid var(--color-border)' }}>
+                    <div key={f.name} className="study-file-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f8fafc', borderRadius: 12, border: '1px solid var(--color-border)' }}>
                       <Icon name={f.isImage ? 'image' : f.isDoc ? 'fileText' : 'file'} size={20} color="var(--color-text-muted)" />
                       <span style={{ flex: 1, fontSize: 13, wordBreak: 'break-all' }}>{f.name}</span>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -670,11 +671,11 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
                         title="Abrir en el visor radiológico"
                         style={{ display: 'block', padding: 0, background: '#0d1f38', borderRadius: 12, overflow: 'hidden', border: '2px solid var(--color-border)', cursor: 'zoom-in', transition: 'border-color 0.15s' }}
                       >
-                        <img
-                          src={authenticatedFileUrl(f.url, user.token)}
+                        <Thumb
+                          url={f.url}
+                          token={user.token}
                           alt={f.name}
                           style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }}
-                          onError={e => { e.target.style.display = 'none'; }}
                         />
                       </button>
                     ))}
@@ -829,7 +830,7 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 10, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+              <div className="study-chat-bar" style={{ display: 'flex', gap: 10, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
                 <div style={{ position: 'relative', flex: 1 }}>
                   <textarea
                     ref={msgInputRef}
@@ -839,6 +840,7 @@ const StudyDetailModal = ({ estudio: initialEstudio, onClose, onUpdated, userRol
                     onChange={e => setNuevoMensaje(e.target.value)}
                     onKeyDown={handleKeyDown}
                     rows={2}
+                    enterKeyHint="send"
                     style={{ width: '100%', resize: 'none', fontSize: 13 }}
                   />
                   {emojiAbierto && (

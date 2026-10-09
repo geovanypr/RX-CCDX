@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL, authenticatedFileUrl, downloadAuthenticatedFile } from '../config';
+import Thumb from './Thumb';
 import { sexoLabel } from '../utils/format';
 import { ESTADO_COLORS, getEstadoColors } from '../utils/constants';
 import { lazyConReintento } from '../utils/lazyConReintento';
@@ -280,9 +281,9 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
   const others = detalle?.archivos?.filter(f => !f.isImage && !f.isDoc) || [];
 
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div className="carp-root" style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* ===== Lista de carpetas ===== */}
-      <div style={{ width: 340, flexShrink: 0, borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', background: '#fff' }}>
+      <div className="carp-list" style={{ width: 340, flexShrink: 0, borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', background: '#fff' }}>
         {/* Búsqueda */}
         <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-border)' }}>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
@@ -295,6 +296,9 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                 style={{ paddingLeft: 32, fontSize: 13 }}
                 placeholder="Buscar paciente o registro..."
                 value={q}
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 onChange={e => { setQ(e.target.value); if (!e.target.value.trim()) { setPage(1); } }}
               />
             </div>
@@ -395,7 +399,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
       </div>
 
       {/* ===== Detalle de carpeta ===== */}
-      <div style={{ flex: 1, overflowY: 'auto', background: 'var(--color-bg)' }}>
+      <div className="carp-detail" style={{ flex: 1, overflowY: 'auto', background: 'var(--color-bg)' }}>
         {!selected ? (
           <div className="empty-state" style={{ padding: '80px 24px' }}>
             <div style={{ marginBottom: 14 }}><Icon name="folderOpen" size={56} color="#94a3b8" /></div>
@@ -408,7 +412,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Header del paciente */}
             <div className="card-flat" style={{ padding: 20, margin: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+              <div className="carp-head" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                 <div style={{
                   width: 56, height: 56, borderRadius: 16, flexShrink: 0,
                   background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
@@ -498,11 +502,11 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                       >
                         <Icon name="download" size={13} color="#fff" />
                       </button>
-                      <img
-                        src={authenticatedFileUrl(f.url, user.token)}
+                      <Thumb
+                        url={f.url}
+                        token={user.token}
                         alt={f.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        onError={e => { e.target.style.display = 'none'; }}
                       />
                       <div style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -529,7 +533,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {docs.map(f => (
-                    <div key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid var(--color-border)' }}>
+                    <div key={f.name} className="carp-doc-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid var(--color-border)' }}>
                       <div style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0, background: f.isDoc && f.name.endsWith('.pdf') ? '#fef2f2' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Icon name="fileText" size={17} color={f.name.endsWith('.pdf') ? '#ef4444' : '#1a66b3'} />
                       </div>
@@ -616,7 +620,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
                           </p>
                         )}
                         {e.diagnostico ? (
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <div className="carp-diag-row" style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                             <div style={{ flex: 1, fontSize: 12.5, lineHeight: 1.65, fontFamily: '"Times New Roman", Times, serif', color: '#374151', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden' }}>
                               {e.diagnostico}
                             </div>
@@ -648,7 +652,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
             )}
             {/* Historial de Acciones / Auditoría del paciente */}
             <div className="card-flat" style={{ padding: 18, margin: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div className="carp-pager" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="clock" size={15} color="var(--color-primary)" />
                   <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)' }}>
@@ -707,7 +711,7 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
 
                   {/* Paginación del Historial */}
                   {historialPages > 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
+                    <div className="carp-pager" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
                       <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)' }}>
                         Página {historialPage} de {historialPages}
                       </span>
@@ -740,21 +744,23 @@ const CarpetasVirtuales = ({ userRole, onOpenStudy, onNewStudy }) => {
       {lightbox && (
         <div
           onClick={() => setLightbox(null)}
+          className="comm-lightbox"
           style={{ position: 'fixed', inset: 0, background: 'rgba(6,16,32,0.94)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}
         >
           <img
             src={authenticatedFileUrl(lightbox.url, user.token)}
             alt={lightbox.name || 'Vista ampliada'}
+            className="comm-lightbox-img"
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '92vw', maxHeight: '92vh', objectFit: 'contain', borderRadius: 10, boxShadow: 'var(--shadow-lg)' }}
           />
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', bottom: 24, display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div onClick={(e) => e.stopPropagation()} className="comm-lightbox-bar" style={{ position: 'absolute', bottom: 24, display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ color: '#cbd5e1', fontSize: 12.5, maxWidth: '60vw', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lightbox.name}</span>
             <button className="btn btn-success btn-sm" onClick={() => handleDownloadArchivo(lightbox)} style={{ gap: 5 }}>
               <Icon name="download" size={12} /> Descargar
             </button>
           </div>
-          <button onClick={() => setLightbox(null)} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={() => setLightbox(null)} aria-label="Cerrar imagen ampliada" className="comm-lightbox-close" style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="close" size={20} color="#fff" />
           </button>
         </div>

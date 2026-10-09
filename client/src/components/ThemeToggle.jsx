@@ -65,7 +65,7 @@ const ThemeToggle = ({ variant = 'topbar' }) => {
       style={{ gap: 6, padding: '6px 10px' }}
     >
       <Icon name={iconName} size={15} color="var(--color-text-secondary)" />
-      <span style={{ fontSize: 12.5 }}>{label}</span>
+      <span className="theme-label" style={{ fontSize: 12.5 }}>{label}</span>
     </button>
   );
 };

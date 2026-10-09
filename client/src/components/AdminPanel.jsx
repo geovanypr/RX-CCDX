@@ -358,7 +358,7 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
                 </div>
                 {usuariosFiltrados.length === 0 && <p className="text-muted" style={{ fontSize: 13 }}>{usuarios.length === 0 ? 'No hay usuarios.' : 'Sin coincidencias.'}</p>}
                 {usuariosFiltrados.map(u => (
-                  <div key={u.id} className="card-flat" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', margin: 0 }}>
+                  <div key={u.id} className="card-flat admin-user-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', margin: 0 }}>
                     <div style={{
                       width: 36, height: 36, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: u.role === 'SUPER_ADMIN' ? '#f3e8ff' : u.role === 'RADIOLOGO' ? '#eff6ff' : '#fffbeb',
@@ -390,7 +390,7 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
           {/* AUDITORÍA */}
           {tab === 'auditoria' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div className="card-flat" style={{ padding: 14, margin: 0, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: 10, alignItems: 'end' }}>
+              <div className="card-flat admin-audit-grid" style={{ padding: 14, margin: 0, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: 10, alignItems: 'end' }}>
                 <div>
                   <label className="field-label">Buscar</label>
                   <input className="input" placeholder="Texto libre (usuario, acción, detalle)..." value={audFiltros.q}
@@ -437,7 +437,7 @@ const AdminPanel = ({ onClose, embedded = false, initialTab = 'usuarios' }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {auditoria.length === 0 && <p className="text-muted" style={{ fontSize: 13 }}>Sin eventos que coincidan con los filtros.</p>}
                   {auditoria.map(a => (
-                    <div key={a.id} className="card-flat" style={{ display: 'flex', gap: 12, padding: '10px 14px', margin: 0, alignItems: 'center' }}>
+                    <div key={a.id} className="card-flat admin-audit-row" style={{ display: 'flex', gap: 12, padding: '10px 14px', margin: 0, alignItems: 'center' }}>
                       <span className="mono text-xs" style={{ color: 'var(--color-text-muted)', flexShrink: 0, fontSize: 10.5 }}>{a.created_at?.replace('T', ' ').slice(0, 16)}</span>
                       <span className="badge badge-blue" style={{ flexShrink: 0, fontSize: 10.5 }}>{a.accion}</span>
                       <span className="text-sm" style={{ color: 'var(--color-text-secondary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.detalle}</span>

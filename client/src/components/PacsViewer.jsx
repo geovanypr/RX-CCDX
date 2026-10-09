@@ -114,11 +114,32 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
     return Math.round(angleRad * (180 / Math.PI));
   };
 
+  // Pinch-to-zoom táctil: mapa de punteros activos + distancia inicial
+  const pointersRef = useRef(new Map());
+  const pinchRef = useRef(null);
+  // Doble toque para acercar/alejar (móvil/tablet)
+  const lastTapRef = useRef({ t: 0, x: 0, y: 0 });
+  const downRef = useRef({ t: 0, x: 0, y: 0 });
+
   const handlePointerDown = (evento) => {
+    pointersRef.current.set(evento.pointerId, { x: evento.clientX, y: evento.clientY });
+    downRef.current = { t: Date.now(), x: evento.clientX, y: evento.clientY };
+    // Dos dedos → iniciar pinch (sin medir ni arrastrar)
+    if (pointersRef.current.size === 2) {
+      const pts = [...pointersRef.current.values()];
+      pinchRef.current = {
+        dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+        zoom: zoomRef.current,
+      };
+      setDragging(false);
+      dragRef.current = null;
+      return;
+    }
+
     const rect = containerRef.current.getBoundingClientRect();
     const px = evento.clientX - rect.left;
     const py = evento.clientY - rect.top;
-    
+
     setDragging(true);
 
     if (herramienta === 'distancia') {
@@ -126,7 +147,7 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
       evento.currentTarget.setPointerCapture?.(evento.pointerId);
       return;
     }
-    
+
     if (herramienta === 'angulo') {
       if (!borradorAngulo || borradorAngulo.phase === 2) {
         // Iniciar nuevo ángulo
@@ -144,6 +165,19 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
   };
 
   const handlePointerMove = (evento) => {
+    if (pointersRef.current.has(evento.pointerId)) {
+      pointersRef.current.set(evento.pointerId, { x: evento.clientX, y: evento.clientY });
+    }
+    // Pinch activo con dos dedos: zoom proporcional a la distancia
+    if (pointersRef.current.size === 2 && pinchRef.current) {
+      const pts = [...pointersRef.current.values()];
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if (dist > 0 && pinchRef.current.dist > 0) {
+        applyZoom(pinchRef.current.zoom * (dist / pinchRef.current.dist));
+      }
+      return;
+    }
+
     if (!dragging) return;
 
     const rect = containerRef.current.getBoundingClientRect();
@@ -154,7 +188,7 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
       setBorrador({ ...borrador, x2: px, y2: py });
       return;
     }
-    
+
     if (herramienta === 'angulo' && borradorAngulo) {
       if (borradorAngulo.phase === 1) {
         setBorradorAngulo({ ...borradorAngulo, p2: { x: px, y: py } });
@@ -172,7 +206,29 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (evento) => {
+    if (evento?.pointerId !== undefined) pointersRef.current.delete(evento.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+    // Doble toque con un dedo y sin herramienta: alterna zoom 1x ↔ 2.5x.
+    // Solo cuenta como toque si fue breve y sin arrastre (para no disparar al soltar un pan).
+    if (evento && pointersRef.current.size === 0 && herramienta === 'none' && evento.pointerType !== 'mouse') {
+      const ahora = Date.now();
+      const duro = ahora - downRef.current.t;
+      const movido = Math.hypot(evento.clientX - downRef.current.x, evento.clientY - downRef.current.y);
+      if (duro < 300 && movido < 12) {
+        const dx = evento.clientX - lastTapRef.current.x;
+        const dy = evento.clientY - lastTapRef.current.y;
+        if (ahora - lastTapRef.current.t < 320 && Math.hypot(dx, dy) < 32) {
+          const objetivo = zoomRef.current > 1.4 ? 1 : 2.5;
+          applyZoom(objetivo, evento.clientX, evento.clientY);
+          if (objetivo === 1) setPan({ x: 0, y: 0 });
+          lastTapRef.current = { t: 0, x: 0, y: 0 };
+        } else {
+          lastTapRef.current = { t: ahora, x: evento.clientX, y: evento.clientY };
+        }
+      }
+    }
+    if (pointersRef.current.size > 0) return;
     setDragging(false);
 
     if (herramienta === 'distancia' && borrador) {
@@ -215,7 +271,7 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
     <div ref={rootRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#060d1c', overflow: 'hidden' }}>
       
       {/* PANEL SUPERIOR: Herramientas e Información (0% Overlays) */}
-      <div style={{
+      <div className="pacs-topbar" style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap',
         background: '#0a1628', borderBottom: '1px solid #1e3a5f', padding: '10px 14px', zIndex: 30, flexShrink: 0
       }}>
@@ -294,9 +350,11 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
       {/* ÁREA DE LA IMAGEN (Libre de obstrucciones) */}
       <div
         ref={containerRef}
+        className="pacs-img-area"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onPointerLeave={handlePointerUp}
         style={{
           flex: 1, position: 'relative', overflow: 'hidden',
@@ -396,7 +454,7 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
       </div>
 
       {/* PANEL INFERIOR: Filtros y Mediciones */}
-      <div style={{
+      <div className="pacs-bottombar" style={{
         display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
         background: '#0a1628', borderTop: '1px solid #1e3a5f', padding: '10px 14px', zIndex: 30, flexShrink: 0
       }}>
@@ -442,9 +500,9 @@ const PacsViewer = ({ imageUrl, imageName = '', index = 0, total = 1, onDownload
           </div>
         )}
         
-        <span style={{ flex: 1 }} />
+        <span className="pacs-hint" style={{ flex: 1 }} />
         
-        <span style={{ fontSize: 10.5, color: '#5f7ba0' }}>
+        <span className="pacs-hint" style={{ fontSize: 10.5, color: '#5f7ba0' }}>
           {herramienta === 'angulo' 
             ? 'Arrastre para trazar la primera línea, luego arrastre para la segunda.' 
             : herramienta === 'distancia' 

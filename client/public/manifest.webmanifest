@@ -1,0 +1,27 @@
+{
+  "name": "RX CCDX — Sistema de Gestión Radiológica",
+  "short_name": "RX CCDX",
+  "description": "Gestión radiológica: bandejas, lectura PACS, informes y mensajería.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b2a5b",
+  "theme_color": "#0b2a5b",
+  "lang": "es",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ]
+}

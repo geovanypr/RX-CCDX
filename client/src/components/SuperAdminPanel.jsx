@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marcarOrigenAdmin, limpiarOrigenAdmin } from '../utils/adminPreview';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { API_URL, downloadAuthenticatedFile } from '../config';
 import Icon from './Icons';
+import MobileTabBar from './MobileTabBar';
+import { useSwipeClose, useDrawerAutoClose } from '../utils/useDrawer';
+import { useVisibleRefetch } from '../utils/useVisibleRefetch';
 import ThemeToggle from './ThemeToggle';
 import NotificationCenter from './NotificationCenter';
 import AccountSettings from './AccountSettings';
@@ -50,6 +53,10 @@ const SuperAdminPanel = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Drawer lateral en móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef(null);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  useSwipeClose(sidebarRef, closeSidebar, sidebarOpen);
+  useDrawerAutoClose(closeSidebar);
   useEffect(() => { setSidebarOpen(false); }, [seccion]);
   const [stats, setStats] = useState(null);
   const [porEstado, setPorEstado] = useState(null);
@@ -84,6 +91,9 @@ const SuperAdminPanel = () => {
   }, [user.token]);
 
   useEffect(() => { cargarResumen(); }, [cargarResumen]);
+
+  // Al volver a la app se revalida el resumen.
+  useVisibleRefetch(cargarResumen);
 
   // Resumen en vivo: cualquier cambio operativo lo actualiza sin refrescar.
   useEffect(() => {
@@ -138,9 +148,9 @@ const SuperAdminPanel = () => {
   );
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
+    <div className="has-tabbar" style={{ display: 'flex', minHeight: '100dvh', background: 'var(--color-bg)' }}>
       {/* ── Barra lateral administrativa (identidad propia, morada) ── */}
-      <aside className={`admin-sidebar${sidebarOpen ? ' open' : ''}`} style={{
+      <aside ref={sidebarRef} className={`admin-sidebar${sidebarOpen ? ' open' : ''}`} style={{
         width: 248, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4,
         padding: '18px 14px', color: '#fff',
         background: 'linear-gradient(180deg, #2e1065 0%, #1e0a44 60%, #150832 100%)',
@@ -199,8 +209,8 @@ const SuperAdminPanel = () => {
       {sidebarOpen && <div className="drawer-backdrop" onClick={() => setSidebarOpen(false)} />}
 
       {/* ── Contenido ── */}
-      <main style={{ flex: 1, minWidth: 0, padding: '20px 26px 40px', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+      <main className="admin-main" style={{ flex: 1, minWidth: 0, padding: '20px 26px 40px' }}>
+        <div className="admin-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
           <button className="btn btn-ghost menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú" style={{ padding: '7px 9px' }}>
             <Icon name="list" size={17} color="var(--color-text)" />
           </button>
@@ -257,7 +267,7 @@ const SuperAdminPanel = () => {
                     </span>
                   </div>
                 )}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div className="admin-resumen-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12, marginBottom: 16 }}>
                   <div className="card-flat" style={{ padding: '16px 18px', margin: 0 }}>
                     <p className="section-title" style={{ marginBottom: 12 }}>Estudios por estado <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--color-text-muted)' }}>(clic para ver bandeja)</span></p>
                     {!conteosValidos || totalPorEstado === 0 ? (
@@ -271,7 +281,7 @@ const SuperAdminPanel = () => {
                             title={`Ver bandeja: ${estado}`}
                             style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', textAlign: 'left' }}
                           >
-                            <span style={{ flex: '0 0 220px', fontSize: 12.5, color: 'var(--color-text-secondary)' }}>{estado}</span>
+                            <span className="admin-estado-label" style={{ flex: '0 0 220px', fontSize: 12.5, color: 'var(--color-text-secondary)' }}>{estado}</span>
                             <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'var(--color-border, #e5e7eb)', overflow: 'hidden' }}>
                               <div style={{ width: `${totalPorEstado ? Math.round((total / totalPorEstado) * 100) : 0}%`, height: '100%', borderRadius: 999, background: '#7e22ce' }} />
                             </div>
@@ -365,6 +375,19 @@ const SuperAdminPanel = () => {
       </main>
 
       {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} />}
+
+      {/* ── Barra de navegación inferior (solo móvil) ── */}
+      <MobileTabBar
+        active={seccion}
+        onSelect={(id) => setSeccion(id)}
+        buttons={[
+          { id: 'resumen', icon: 'chart', label: 'Resumen' },
+          { id: 'usuarios', icon: 'users', label: 'Usuarios' },
+          { id: 'auditoria', icon: 'clipboard', label: 'Auditoría' },
+          { id: 'plantillas', icon: 'fileText', label: 'Plantillas' },
+          { id: 'parametros', icon: 'settings', label: 'Ajustes' },
+        ]}
+      />
     </div>
   );
 };

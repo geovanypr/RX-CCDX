@@ -23,6 +23,7 @@
     "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.0",
+    "sharp": "^0.35.5",
     "socket.io": "^4.8.3"
   }
 }

@@ -6,6 +6,7 @@ import { getRememberChoice, getSavedUsername } from '../utils/sessionStore';
 import { enableSound } from '../utils/notificationSound';
 import Icon from './Icons';
 import { enforceLightMode } from '../utils/useTheme';
+import { useInstallPrompt } from '../utils/useInstallPrompt';
 
 // Garantizar modo claro en cuanto se carga el módulo — antes del primer render
 enforceLightMode();
@@ -25,6 +26,7 @@ const Login = () => {
   );
   const navigate = useNavigate();
   const { user, loading: authLoading, login, logout } = useContext(AuthContext);
+  const { disponible: instalable, instalar } = useInstallPrompt();
 
   const irAInicio = (role) => {
     if (role === 'SUPER_ADMIN') navigate('/admin', { replace: true });
@@ -125,6 +127,9 @@ const Login = () => {
               required
               autoFocus
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              enterKeyHint="next"
               spellCheck={false}
             />
           </div>
@@ -141,6 +146,7 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                enterKeyHint="go"
               />
               <button
                 type="button"
@@ -183,6 +189,19 @@ const Login = () => {
           >
             ¿Olvidaste tu contraseña?
           </Link>
+          {instalable && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={instalar}
+                style={{ gap: 6 }}
+                title="Instalar RX CCDX como aplicación en este dispositivo"
+              >
+                <Icon name="download" size={14} color="currentColor" /> Instalar app en este dispositivo
+              </button>
+            </div>
+          )}
           <p style={{ marginTop: 14, fontSize: 11, color: 'var(--color-text-muted)' }}>
             Solo el administrador puede crear cuentas de usuario
           </p>

@@ -66,7 +66,7 @@ const RegisterUser = () => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
             <label className="field-label">Usuario</label>
-            <input type="text" className="input" name="username" value={formData.username} onChange={handleChange} required />
+            <input type="text" className="input" name="username" value={formData.username} onChange={handleChange} required autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off" enterKeyHint="next" />
           </div>
           <div>
             <label className="field-label">Contraseña</label>

@@ -256,6 +256,10 @@ const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
                   onBlur={handleRegistroBlur}
                   required
                   autoComplete="off"
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
                   style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, paddingRight: lookingUp ? 36 : undefined }}
                 />
                 {lookingUp && (
@@ -342,7 +346,7 @@ const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="form-row-2col" style={{ display: 'flex', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <label className="field-label">
                       Edad (años) {!isExistingPatient && <span style={{ color: '#ef4444' }}>*</span>}
@@ -356,6 +360,8 @@ const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
                       required={!isExistingPatient}
                       min="0"
                       max="120"
+                      inputMode="numeric"
+                      enterKeyHint="next"
                       readOnly={isExistingPatient}
                       placeholder="Ej. 45"
                     />
@@ -424,7 +430,7 @@ const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="form-row-2col" style={{ display: 'flex', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <label className="field-label" htmlFor="reg-region">Región Anatómica</label>
                     <select id="reg-region" className="input" name="region" value={formData.region} onChange={handleChange}>
@@ -510,7 +516,7 @@ const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
           <button
             type="submit"
             form="register-placa-form"
-            className="btn btn-primary"
+            className="btn btn-primary register-submit"
             disabled={saving || loadingId}
             style={{ minWidth: 220 }}
           >

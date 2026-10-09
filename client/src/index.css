@@ -2505,3 +2505,232 @@ img, video, canvas, svg { max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ============================================================
+   RESPONSIVE MÓVIL v2 — vistas apiladas, objetivos táctiles y
+   tipografía accesible. Se añade al final para tener prioridad.
+   ============================================================ */
+
+/* iOS: no inflar el texto al girar el dispositivo */
+body { -webkit-text-size-adjust: 100%; }
+
+/* Alto real del viewport en móvil (evita las barras del navegador) */
+.app-container { height: 100dvh; }
+
+/* Los contenedores flex deben poder encogerse para no desbordar */
+.flex-1, .min-w-0, .main-content { min-width: 0; }
+
+/* Objetivos táctiles cómodos en pantallas táctiles */
+@media (hover: none) and (pointer: coarse) {
+  .btn { min-height: 40px; }
+  .btn-xs { min-height: 32px; }
+  .nav-item { min-height: 44px; }
+  .tab-btn { min-height: 44px; }
+}
+
+/* ── Tableta angosta (hasta 1100px) ── */
+@media (max-width: 1100px) {
+  .rx-worklist { width: 250px !important; }
+}
+
+/* ══════════════  MÓVIL / TABLETA  (≤ 900px)  ══════════════ */
+@media (max-width: 900px) {
+
+  /* --- Alto real del viewport (supera el 100vh en línea) --- */
+  .app-container { height: 100dvh !important; }
+
+  /* --- Sidebar / drawers --- */
+  .sidebar {
+    width: min(300px, 86vw);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: auto;
+  }
+  .main-content { width: 100%; }
+
+  /* --- Topbar: se reorganiza en varias filas --- */
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 0;
+    padding: 10px 14px;
+    row-gap: 8px;
+    column-gap: 8px;
+  }
+  .topbar .flex-1 { flex: 1 1 140px; min-width: 0; }
+  .topbar .flex-1 h3 { flex-wrap: wrap; }
+  .topbar-search { flex: 1 1 100%; width: 100%; order: 5; }
+  .topbar-search .input { width: 100% !important; }
+
+  /* --- Cuerpo del dashboard: columnas apiladas y scroll único --- */
+  .dash-body {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dash-list {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    width: 100% !important;
+    padding: 14px 12px 18px !important;
+  }
+  .dash-page {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 14px 12px 22px !important;
+  }
+  .dash-aside {
+    width: 100% !important;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+    border-left: none !important;
+    border-top: 1px solid var(--color-border);
+    padding: 16px 12px 26px !important;
+  }
+
+  /* --- Alertas: márgenes laterales consistentes --- */
+  .main-content .alert { margin-left: 12px !important; margin-right: 12px !important; }
+
+  /* --- Barra de filtros: controles a lo ancho --- */
+  .dash-filters, .filter-bar {
+    padding: 10px 12px 0 !important;
+    gap: 8px !important;
+  }
+  .dash-filters .input,
+  .dash-filters select.input,
+  .dash-filters input[type="date"] { width: 100% !important; }
+  .dash-filters > * { max-width: 100%; }
+
+  /* --- Panel de conversación lateral a pantalla completa --- */
+  .dash-comm-drawer {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    top: 0 !important;
+  }
+
+  /* --- Carpetas virtuales: lista arriba, detalle abajo --- */
+  .carp-root {
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .carp-list {
+    width: 100% !important;
+    max-height: 46vh;
+    border-right: none !important;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .carp-detail {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+  }
+
+  /* --- Reportes --- */
+  .reportes-root {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    padding: 14px 12px 26px !important;
+  }
+
+  /* --- Portal SuperAdmin --- */
+  .admin-sidebar { width: min(290px, 86vw) !important; }
+  .admin-main { padding: 16px 14px 32px !important; }
+  .admin-head { gap: 8px !important; }
+  .admin-head h2 { font-size: 17px !important; }
+  .admin-audit-grid { grid-template-columns: 1fr !important; }
+  .admin-resumen-grid { grid-template-columns: 1fr !important; }
+  .admin-estado-label { flex: 0 1 auto !important; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Evita que los grid con columnas fr desborden por contenido ancho */
+  .admin-main [style*="grid"] { min-width: 0; }
+  .admin-main [style*="grid"] > * { min-width: 0; }
+
+  /* --- Radiólogo: header flexible y acciones desplazables --- */
+  .rx-header {
+    flex-wrap: wrap;
+    height: auto !important;
+    min-height: 56px;
+    padding: 8px 12px !important;
+    row-gap: 8px;
+  }
+  .rx-header-title h2 { font-size: 13.5px !important; }
+  .rx-header-title p { display: none; }
+  .rx-header-actions {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .rx-header-actions::-webkit-scrollbar { display: none; }
+
+  /* --- Modales --- */
+  .modal { max-width: calc(100vw - 20px) !important; }
+  .modal-body { padding: 16px; }
+  .modal-header, .modal-footer { padding-left: 16px; padding-right: 16px; }
+
+  /* --- Tablas --- */
+  .table-wrap th, .table-wrap td { padding: 9px 10px; font-size: 12.5px; }
+
+  /* --- Toasts --- */
+  .toast-stack { right: 10px; left: 10px; width: auto; }
+
+  /* --- Avisos legibles --- */
+  .alert { font-size: 12.5px; }
+}
+
+/* ══════════════  TELÉFONO  (≤ 640px)  ══════════════ */
+@media (max-width: 640px) {
+  body { font-size: 14.5px; }
+
+  /* Evita el zoom automático de iOS al enfocar un campo */
+  .input, select.input, textarea.input { font-size: 16px; }
+
+  .btn { padding: 10px 14px; font-size: 13px; }
+  .btn-sm { padding: 8px 12px; font-size: 12.5px; }
+  .btn-xs { padding: 6px 10px; font-size: 11.5px; }
+
+  /* Modales y panel de avisos a pantalla completa */
+  .modal-backdrop { padding: 0; align-items: stretch; }
+  .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 0;
+    max-height: 100dvh;
+    height: 100dvh;
+  }
+  .modal-header { padding: 14px 16px; }
+  .notification-panel { width: 100%; }
+
+  /* Tarjetas y grids */
+  .card, .card-flat { border-radius: var(--radius); }
+  .card { padding: 16px; }
+  .kpi-card { padding: 14px 16px; }
+  .kpi-value { font-size: 24px; }
+  .stat-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Título del topbar */
+  .topbar h3 { font-size: 14.5px !important; }
+
+  /* Wizard de pasos: sin etiquetas para ganar espacio */
+  .wizard-step-label { display: none; }
+  .wizard-step:not(:last-child)::after { margin: 0 5px; }
+
+  /* Pipeline de estados compacto */
+  .pipeline-label { max-width: 52px; font-size: 9px; }
+
+  /* Tablas aún más compactas */
+  .table-wrap th, .table-wrap td { padding: 8px 9px; }
+  .table-wrap table { min-width: 520px; }
+
+  /* Autenticación */
+  .auth-card { padding: 28px 20px; }
+  .brand-logo { max-width: 190px; }
+
+  /* Toasts abajo, al alcance del pulgar */
+  .toast-stack { top: auto; bottom: 12px; right: 10px; left: 10px; }
+}

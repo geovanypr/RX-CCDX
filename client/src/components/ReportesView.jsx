@@ -84,9 +84,9 @@ const ReportesView = ({ headers, onOpenStudy }) => {
   const maxRegion = data?.regiones?.[0]?.total || 1;
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="reportes-root" style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', background: 'var(--color-surface-2)', borderRadius: 10, padding: 3, border: '1px solid var(--color-border)' }}>
+        <div className="reportes-periodos" style={{ display: 'flex', background: 'var(--color-surface-2)', borderRadius: 10, padding: 3, border: '1px solid var(--color-border)' }}>
           {PERIODOS.map(p => (
             <button
               key={p.dias}

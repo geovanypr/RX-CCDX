@@ -10,6 +10,12 @@ export const API_URL = import.meta.env.VITE_API_URL || (
 export const authenticatedFileUrl = (filePath, token) =>
   `${API_URL}${filePath}${filePath.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
 
+// Miniatura liviana (~320px, ~15-40 KB) para listados y tiras en móvil.
+// El servidor la genera con sharp y la cachea en disco (?thumb=1).
+// El visor PACS, el lightbox y las descargas siguen usando la imagen completa.
+export const thumbUrl = (filePath, token) =>
+  authenticatedFileUrl(`${filePath}${filePath.includes('?') ? '&' : '?'}thumb=1`, token);
+
 export async function downloadAuthenticatedFile(path, token, fallbackName = 'descarga.zip') {
   const url = authenticatedFileUrl(path, token);
   const link = document.createElement('a');

@@ -68,7 +68,7 @@ const NotificationCenter = ({ variant = 'light' }) => {
           color={oscuro ? '#fff' : 'currentColor'}
           style={{ position: 'relative', zIndex: 1 }}
         />
-        {!oscuro && 'Avisos'}
+        {!oscuro && <span className="notif-label">Avisos</span>}
         {notificationsEnabled && sinLeer > 0 && (
           <span style={{
             background: '#ef4444', color: '#fff', borderRadius: 999, padding: '1px 7px',
@@ -86,7 +86,7 @@ const NotificationCenter = ({ variant = 'light' }) => {
           border: '1px solid var(--color-border)', boxShadow: '0 20px 50px -16px rgba(15,23,42,0.35)',
           overflow: 'hidden',
         }}>
-          <div style={{
+          <div className="notif-dropdown-head" style={{
             display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px',
             borderBottom: '1px solid var(--color-border)', background: 'linear-gradient(135deg,#f8fafc,#eff6ff)',
           }}>
@@ -109,7 +109,7 @@ const NotificationCenter = ({ variant = 'light' }) => {
             )}
           </div>
 
-          <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+          <div className="notif-list" style={{ maxHeight: 340, overflowY: 'auto' }}>
             {notifications.length === 0 ? (
               <div style={{ padding: '28px 18px', textAlign: 'center' }}>
                 <Icon name="bell" size={30} color="#cbd5e1" />

@@ -1,0 +1,840 @@
+/* ============================================================
+   RX CCDX — Capa Responsive Móvil v3
+   Prioridad máxima: se carga DESPUÉS de index.css.
+   Todo usa vars existentes, compatible claro/oscuro.
+   ============================================================ */
+
+/* ── Base: viewport real + sin desbordes fantasma ── */
+html, body { overflow-x: clip; overscroll-behavior-y: none; }
+body { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+/* Fallback primero para navegadores sin dvh */
+.app-container { height: 100vh; height: 100dvh; }
+img, video, canvas, svg { max-width: 100%; }
+.flex-1, .min-w-0, .main-content { min-width: 0; }
+/* Etiquetas corta/larga del botón Registrar (ver Dashboard.jsx) */
+.topbar .btn-label-short { display: none; }
+@media (max-width: 640px) {
+  .topbar .btn-label-full { display: none; }
+  .topbar .btn-label-short { display: inline; }
+}
+
+/* ── Objetivos táctiles en pantallas táctiles ── */
+@media (hover: none) and (pointer: coarse) {
+  .btn { min-height: 42px; }
+  .btn-xs { min-height: 34px; padding: 7px 11px; font-size: 12px; }
+  .btn-sm { min-height: 38px; }
+  .nav-item { min-height: 46px; }
+  .tab-btn { min-height: 46px; }
+  input[type="checkbox"] { width: 20px !important; height: 20px !important; }
+}
+
+/* ════════════════════════════════════════════
+   TOPBAR — rejilla móvil
+   ════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .topbar {
+    display: grid !important;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-top, 0px) * 0) !important;
+    position: sticky;
+    top: 0;
+  }
+  .topbar .flex-1 { min-width: 0; }
+  .topbar .flex-1 h3 { font-size: 14px !important; gap: 7px !important; }
+  .topbar .flex-1 h3 .badge { display: none; }
+  .topbar .flex-1 p { display: none; }
+  .topbar-search { grid-column: 1 / -1; order: 9; width: 100%; }
+  .topbar-search .input { width: 100% !important; }
+  /* Toggle Placas/Pacientes ocupa fila completa */
+  .topbar > div[style*="background: var(--color-surface-2)"],
+  .topbar > div[style*="background:var(--color-surface-2)"] {
+    grid-column: 1 / -1;
+    order: 8;
+    width: 100%;
+  }
+  .topbar > div[style*="background: var(--color-surface-2)"] button,
+  .topbar > div[style*="background:var(--color-surface-2)"] button { flex: 1; justify-content: center; }
+  /* Botón Registrar: compacto, solo icono + texto corto */
+  .topbar .btn-primary { padding: 9px 12px !important; font-size: 12.5px !important; }
+  .topbar .btn-primary svg { flex-shrink: 0; }
+}
+
+/* ════════════════════════════════════════════
+   DASHBOARD — filtros a lo ancho
+   ════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .dash-filters {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    padding: 10px 12px 4px !important;
+  }
+  .dash-filters select.input { width: 100% !important; }
+  .dash-filters > div { min-width: 0; }
+  .dash-filters > div input[type="date"] { width: 100% !important; }
+  .dash-filters .text-xs { grid-column: 1 / -1; text-align: right; }
+  .dash-filters .btn { justify-content: center; }
+}
+@media (max-width: 560px) {
+  .dash-filters { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════════════════════
+   DASHBOARD — tabla de placas → tarjetas
+   (requiere data-label en cada <td>)
+   ════════════════════════════════════════════ */
+@media (max-width: 760px) {
+  .dash-list { padding: 12px 10px 90px !important; }
+  .dash-list .table-shell { background: transparent; border: none; box-shadow: none; overflow: visible; }
+  .dash-list .table-wrap { overflow: visible; }
+  .dash-list .table-wrap table { min-width: 0 !important; }
+  .dash-list thead { display: none; }
+  .dash-list tbody { display: flex; flex-direction: column; gap: 10px; }
+  .dash-list tbody tr {
+    display: block;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .dash-list tbody tr:active { transform: scale(0.99); }
+  .dash-list tbody tr.row-active { border-color: var(--color-secondary); box-shadow: var(--shadow-glow); }
+  .dash-list tbody td {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    border: none !important;
+    padding: 8px 0 !important;
+    font-size: 13px !important;
+  }
+  .dash-list tbody td + td { border-top: 1px dashed var(--color-border) !important; }
+  .dash-list tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+  }
+  .dash-list tbody td[data-label=""]::before { display: none; }
+  .dash-list tbody td[data-label=""] { justify-content: flex-start; }
+  /* Acciones: botones grandes, a todo ancho y con wrap */
+  .dash-list tbody td[data-label="Acciones"] > div { width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important; }
+  .dash-list tbody td[data-label="Acciones"] .btn { width: 100%; min-height: 40px; justify-content: center; }
+}
+
+/* ── Estado vacío dentro de tarjetas ── */
+@media (max-width: 760px) {
+  .dash-list tbody tr:has(.empty-state) { padding: 0; }
+  .dash-list tbody td[colspan] { display: block !important; }
+  .dash-list tbody td[colspan]::before { display: none; }
+}
+
+/* ════════════════════════════════════════════
+   DASHBOARD — tarjetas de pacientes apiladas
+   ════════════════════════════════════════════ */
+@media (max-width: 760px) {
+  .dash-page { padding: 12px 10px 96px !important; }
+  .dash-page .card-flat {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 14px !important;
+  }
+  .dash-page .card-flat > div:nth-child(3) { display: flex; gap: 8px; }
+  .dash-page .card-flat > div:nth-child(3) .btn { flex: 1; justify-content: center; min-height: 42px; }
+  .dash-page .card-flat > div:last-child { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dash-page .card-flat > div:last-child .btn { width: 100%; justify-content: center; min-height: 42px; }
+}
+
+/* ════════════════════════════════════════════
+   DASHBOARD — panel lateral y drawer de canal
+   ════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .dash-aside {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--color-border);
+    padding: 14px 12px 90px !important;
+  }
+  .dash-comm-drawer {
+    position: fixed !important;
+    top: 0 !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
+    width: 100% !important; max-width: 100% !important; z-index: 5000 !important;
+  }
+}
+
+/* ════════════════════════════════════════════
+   RADIÓLOGO — header, paneles y visor
+   ════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .rx-header { flex-wrap: wrap; height: auto !important; min-height: 56px; padding: 8px 10px !important; row-gap: 8px; }
+  .rx-header-title h2 { font-size: 13px !important; }
+  .rx-header-title p { display: none; }
+  .rx-header-actions { flex: 1 1 100%; display: flex; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; gap: 6px !important; }
+  .rx-header-actions::-webkit-scrollbar { display: none; }
+  .rx-header-actions .btn, .rx-header-actions span { flex-shrink: 0; }
+
+  .rx-reader { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
+  .rx-pane-visor { width: 100% !important; min-height: 58dvh; border-right: none !important; border-bottom: 1px solid #1e3a5f; flex-shrink: 0; }
+  .rx-pane-editor, .rx-pane-comm { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--color-border); overflow: visible !important; flex-shrink: 0; }
+  .rx-pane-comm { min-height: 340px; padding-bottom: 90px; }
+  .rx-pane-editor { padding-bottom: 12px; }
+
+  .cmp-split { flex-direction: column !important; overflow-y: auto !important; }
+  .cmp-pane { min-height: 44dvh; border-right: none !important; border-bottom: 1px solid #1e3a5f; }
+}
+
+/* ── PACS: barras desplazables con scroll horizontal ── */
+.pacs-topbar, .pacs-bottombar { scrollbar-width: thin; }
+.pacs-topbar::-webkit-scrollbar, .pacs-bottombar::-webkit-scrollbar { height: 4px; }
+@media (max-width: 900px) {
+  .pacs-topbar, .pacs-bottombar {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start !important;
+  }
+  .pacs-topbar > *, .pacs-bottombar > * { flex-shrink: 0; }
+  .pacs-hint { display: none !important; }
+}
+
+/* ════════════════════════════════════════════
+   MODALES — hoja inferior en teléfono
+   ════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .modal-backdrop { padding: 0 !important; align-items: flex-end !important; }
+  .modal {
+    width: 100% !important; max-width: 100% !important;
+    height: 96dvh !important; max-height: 96dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    animation: sheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  .modal::before {
+    content: ''; display: block; width: 40px; height: 4px; border-radius: 999px;
+    background: var(--color-border-strong); margin: 8px auto 0; flex-shrink: 0;
+  }
+  .modal-body { padding: 16px 14px 100px !important; }
+  .modal-header { padding: 12px 14px !important; position: sticky; top: 0; z-index: 5; }
+  .modal-footer {
+    position: sticky; bottom: 0; z-index: 5;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom)) !important;
+  }
+  .modal-footer .btn { flex: 1; min-height: 46px; justify-content: center; }
+  .notification-panel { width: 100% !important; }
+  .confirm-modal { padding: 16px !important; align-items: flex-end !important; }
+  .confirm-modal-box { max-width: 100% !important; border-radius: 20px !important; }
+  .confirm-modal-actions .btn { flex: 1; min-height: 46px; justify-content: center; }
+}
+@keyframes sheetUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Tabs con scroll horizontal ── */
+@media (max-width: 760px) {
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { flex-shrink: 0; }
+}
+
+/* ── Formularios: 1 columna + campos grandes ── */
+@media (max-width: 640px) {
+  .input, select.input, textarea.input { font-size: 16px !important; padding: 12px 14px !important; }
+  .search-wrapper .input { padding-left: 38px !important; }
+  .field-label { font-size: 13px !important; }
+  .wizard-step-label { display: none; }
+  .kpi-value { font-size: 24px; }
+  .stat-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .card { padding: 16px 14px; }
+}
+
+/* ════════════════════════════════════════════
+   SUPERADMIN / ADMIN — rejillas a 1 columna
+   ════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .admin-main { padding: 14px 12px 100px !important; }
+  .admin-head h2 { font-size: 16px !important; }
+  .admin-resumen-grid { grid-template-columns: 1fr !important; }
+  .admin-estado-label { flex: 0 1 auto !important; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .admin-main [style*="grid"] > * { min-width: 0; }
+}
+@media (max-width: 640px) {
+  /* Solo las tarjetas pequeñas (KPIs) van en 2 columnas; los formularios
+     de 240/320px mínimo van a 1 columna para no quedar apretados */
+  .admin-main [style*="minmax(180px"] { grid-template-columns: 1fr 1fr !important; }
+  .admin-main [style*="minmax(240px"],
+  .admin-main [style*="minmax(320px"] { grid-template-columns: 1fr !important; }
+}
+/* Actividad reciente: filas que se adaptan sin scroll lateral */
+@media (max-width: 760px) {
+  .admin-main .card-flat [style*="flex-direction: column"] > div[style*="display: flex"] { flex-wrap: wrap !important; }
+}
+
+/* ════════════════════════════════════════════
+   CARPETAS / REPORTES
+   ════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .carp-root { flex-direction: column !important; height: auto !important; overflow: visible !important; padding-bottom: 90px; }
+  .carp-list { width: 100% !important; max-height: 44dvh; border-right: none !important; border-bottom: 1px solid var(--color-border); }
+  .carp-detail { overflow: visible !important; }
+  .reportes-root { padding: 14px 12px 100px !important; }
+}
+@media (max-width: 640px) {
+  .reportes-root [style*="minmax(320px"] { grid-template-columns: 1fr !important; }
+  .reportes-root [style*="minmax(180px"], .reportes-root [style*="minmax(170px"] { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ════════════════════════════════════════════
+   BARRA DE NAVEGACIÓN INFERIOR MÓVIL
+   ════════════════════════════════════════════ */
+.mobile-tabbar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .mobile-tabbar {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 4500;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -8px 24px -8px rgba(0, 51, 102, 0.18);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  html.dark .mobile-tabbar { box-shadow: 0 -8px 24px -8px rgba(0, 0, 0, 0.6); }
+  .mobile-tabbar button {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 10px; font-weight: 600;
+    color: var(--color-text-muted);
+    padding: 7px 2px 5px;
+    border-radius: 10px;
+    min-height: 54px;
+    position: relative;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .mobile-tabbar button:active { transform: scale(0.96); }
+  .mobile-tabbar button.active { color: var(--color-primary); }
+  html.dark .mobile-tabbar button.active { color: var(--color-accent); }
+  .mobile-tabbar button.active::before {
+    content: ''; position: absolute; top: 0;
+    width: 26px; height: 3px; border-radius: 999px;
+    background: var(--color-secondary);
+  }
+  .mobile-tabbar .tabbar-badge {
+    position: absolute; top: 2px; right: calc(50% - 22px);
+    background: #ef4444; color: #fff;
+    font-size: 9.5px; font-weight: 800;
+    border-radius: 999px; padding: 1px 6px; min-width: 18px; text-align: center;
+  }
+  .mobile-tabbar-fab {
+    width: 52px !important; flex: 0 0 52px !important;
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary)) !important;
+    color: #fff !important;
+    border-radius: 16px !important;
+    margin: 0 4px;
+    box-shadow: 0 6px 16px -4px rgba(26, 102, 179, 0.55);
+  }
+  .mobile-tabbar-fab.active { color: #fff !important; }
+  .mobile-tabbar-fab.active::before { display: none; }
+  /* El contenido principal deja sitio a la tabbar */
+  .has-tabbar .dash-list, .has-tabbar .dash-page, .has-tabbar .dash-aside,
+  .has-tabbar .admin-main, .has-tabbar .reportes-root { padding-bottom: 96px !important; }
+}
+/* En escritorio la tabbar no existe */
+@media (min-width: 901px) {
+  .mobile-tabbar { display: none !important; }
+}
+
+/* ── Toasts abajo en móvil, al alcance del pulgar ── */
+@media (max-width: 640px) {
+  .toast-stack { top: auto !important; bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
+  .alert { font-size: 12.5px; margin-left: 10px !important; margin-right: 10px !important; }
+}
+
+/* ── Movimiento reducido ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* ============================================================
+   RONDA 2 — formularios, interiores de modales, chat, tablet,
+   landscape, pantallas muy pequeñas e impresión
+   ============================================================ */
+
+/* ── Formularios de 2 columnas → 1 columna en teléfono ── */
+@media (max-width: 600px) {
+  .form-row-2col { flex-direction: column !important; }
+  .form-row-2col > * { width: 100% !important; flex: none !important; }
+  .register-submit { min-width: 0 !important; width: 100%; justify-content: center; }
+  fieldset { min-width: 0; }
+  fieldset legend { max-width: 100%; }
+}
+
+/* ── StudyDetailModal: banner de urgencia, rejillas, archivos ── */
+@media (max-width: 760px) {
+  .modal-header .flex-1 p { overflow-wrap: anywhere; }
+  /* Banner prioridad: botón a fila propia */
+  .modal-body > div > div[style*="flex-wrap: wrap"] > .btn { margin-left: 0 !important; width: 100%; justify-content: center; }
+  /* Rejilla info 280px → 1 columna real */
+  .modal-body [style*="minmax(min(100%, 280px)"] { grid-template-columns: 1fr !important; gap: 10px !important; }
+  /* Rejilla adjuntos 150px → miniaturas táctiles 3 por fila */
+  .modal-body [style*="minmax(150px"] { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+  /* Botoneras del footer del detalle: a todo ancho */
+  .modal-body [style*="justify-content: flex-end"] { flex-wrap: wrap; }
+  .modal-body [style*="justify-content: flex-end"] .btn { flex: 1 1 140px; justify-content: center; }
+  /* Zona de drop más compacta */
+  .modal-body [style*="dashed"] { padding: 20px 14px !important; }
+}
+/* Teléfonos muy angostos: adjuntos 2 por fila */
+@media (max-width: 380px) {
+  .modal-body [style*="minmax(150px"] { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── InformeViewer: hoja legible sin scroll lateral ── */
+@media (max-width: 760px) {
+  .informe-body { padding: 12px 10px 110px !important; }
+  .paper { border-radius: 12px; }
+  .paper-letterhead { padding: 12px 14px !important; font-size: 12px; }
+  .modal-header [style*="display: flex"][style*="gap"] { flex-wrap: wrap; }
+  .modal-header .btn { flex: 1 1 140px; justify-content: center; }
+}
+
+/* ── Radiólogo: editor y plantillas en teléfono ── */
+@media (max-width: 900px) {
+  .rx-pane-editor > div:first-child { padding: 10px !important; }
+  .rx-pane-editor .paper { min-height: 0 !important; }
+  .rx-pane-editor textarea.input { min-height: 220px !important; font-size: 16px !important; }
+  /* Dropdown de plantillas: no se sale de la pantalla */
+  .rx-pane-editor [style*="minWidth: 290"],
+  .rx-pane-editor [style*="min-width: 290"] {
+    position: fixed !important;
+    left: 10px !important; right: 10px !important; top: auto !important; bottom: 84px !important;
+    min-width: 0 !important; max-height: 46dvh; overflow-y: auto;
+  }
+  /* Footer del editor: firmar a todo ancho */
+  .rx-pane-editor > div:last-child .btn-secondary { flex: 1 1 100%; justify-content: center; min-height: 48px; order: 9; }
+  .rx-pane-editor > div:last-child .btn-ghost,
+  .rx-pane-editor > div:last-child .btn-info,
+  .rx-pane-editor > div:last-child .btn-danger { flex: 1 1 30%; justify-content: center; }
+}
+/* Tableta apaisada / escritorio angosto: paneles proporcionados */
+@media (min-width: 901px) and (max-width: 1280px) {
+  .rx-pane-editor { width: 340px !important; }
+  .rx-pane-comm { width: 280px !important; }
+  .dash-aside { width: 300px !important; }
+}
+
+/* ── Chat (CommunicationPanel/Hub): burbujas y teclado móvil ── */
+@media (max-width: 760px) {
+  /* Burbujas que no se pegan a los bordes */
+  [class*="dash-comm-drawer"] textarea,
+  .rx-pane-comm textarea { font-size: 16px !important; }
+  /* Input del chat respeta el área segura inferior */
+  .rx-pane-comm > div:last-child,
+  [class*="dash-comm-drawer"] > div:last-child { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  /* Picker de emoji dentro de la pantalla */
+  .rx-pane-comm [style*="position: absolute"],
+  [class*="dash-comm-drawer"] [style*="position: absolute"] { max-width: calc(100vw - 24px); }
+}
+
+/* ── Carpetas virtuales: buscador y tarjetas ── */
+@media (max-width: 760px) {
+  .carp-list [style*="display: flex"][style*="gap"] { flex-wrap: wrap; }
+  .carp-list .input { font-size: 16px !important; }
+  .carp-detail { padding: 12px 10px 100px !important; }
+  .carp-detail [style*="minmax(130px"] { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+/* ── Reportes: cabecera y tablas ── */
+@media (max-width: 760px) {
+  .reportes-root .card-flat { padding: 14px 12px !important; }
+  .reportes-root [style*="minmax(320px"] { grid-template-columns: 1fr !important; }
+  .reportes-root [style*="marginLeft: auto"],
+  .reportes-root [style*="margin-left: auto"] { margin-left: 0 !important; }
+}
+
+/* ── AdminPanel embebido: pestañas y filas de usuario ── */
+@media (max-width: 760px) {
+  .admin-embedded .tabs { padding: 0 8px !important; }
+  .admin-embedded .modal-body { padding: 14px 10px 100px !important; }
+  .admin-embedded table { min-width: 620px; }
+}
+
+/* ── Pantallas muy pequeñas (≤360px): todo a 1 columna ── */
+@media (max-width: 380px) {
+  .dash-filters { grid-template-columns: 1fr; }
+  .stat-grid-3 { grid-template-columns: 1fr 1fr !important; }
+  .admin-main [style*="minmax(180px"],
+  .admin-main [style*="minmax(240px"],
+  .admin-main [style*="minmax(320px"],
+  .reportes-root [style*="minmax(180px"],
+  .reportes-root [style*="minmax(170px"] { grid-template-columns: 1fr !important; }
+  .dash-list tbody td[data-label="Acciones"] > div { grid-template-columns: 1fr !important; }
+  .topbar { gap: 6px 8px; padding: 8px 10px !important; }
+}
+
+/* ── Landscape con poca altura: compactar chrome ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .modal { height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; }
+  .modal::before { display: none; }
+  .modal-body { padding-bottom: 24px !important; }
+  .mobile-tabbar button { min-height: 46px; font-size: 0; gap: 0; }
+  .mobile-tabbar button span:last-child { display: none; }
+  .rx-pane-visor { min-height: 70dvh; }
+  .auth-card { padding: 20px !important; }
+  .brand-logo { max-width: 140px !important; margin-bottom: 8px !important; }
+  .auth-brand { margin-bottom: 14px !important; }
+}
+
+/* ── Tableta vertical (601–900px): aprovechar el ancho ── */
+@media (min-width: 601px) and (max-width: 900px) {
+  .dash-list tbody tr { padding: 8px 18px; }
+  .dash-list tbody td[data-label="Acciones"] > div { grid-template-columns: repeat(3, 1fr) !important; }
+  .dash-page .card-flat { flex-direction: row !important; align-items: center !important; }
+  .dash-page .card-flat > div:last-child { display: flex !important; }
+  .dash-page .card-flat > div:last-child .btn { width: auto !important; }
+  .reportes-root [style*="minmax(320px"] { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── Impresión: sin tabbar ni drawers ── */
+@media print {
+  .mobile-tabbar, .drawer-backdrop, .toast-stack, .notification-panel { display: none !important; }
+  .app-container { height: auto; }
+}
+
+/* ============================================================
+   RONDA 3 — topbar compacto, respuesta táctil y scroll encadenado
+   ============================================================ */
+
+/* ── Sin resaltado gris al tocar ni doble-tap con retardo ── */
+body { -webkit-tap-highlight-color: transparent; }
+.btn, .tab-btn, .nav-item, .mobile-tabbar button, a, .worklist-item {
+  touch-action: manipulation;
+}
+/* Los drawers permiten scroll vertical; el cierre por gesto lo maneja JS */
+.sidebar, .admin-sidebar, .rx-worklist { touch-action: pan-y; }
+
+/* ── Scroll encadenado: el fondo no se mueve al llegar al tope ── */
+.modal-body, .sidebar-nav, .table-wrap, .dash-list, .dash-page,
+.notification-panel, .autocomplete-list { overscroll-behavior: contain; }
+
+/* ── Topbar móvil: 4 columnas explícitas (menú, título, avisos, tema) ── */
+@media (max-width: 900px) {
+  .topbar { grid-template-columns: auto 1fr auto auto !important; }
+  /* Registrar vive en la tabbar inferior (botón ＋); no duplica en el topbar */
+  .topbar .topbar-register { display: none !important; }
+}
+/* ── Teléfono: iconos solos en Avisos y Tema ── */
+@media (max-width: 640px) {
+  .topbar .notif-label, .topbar .theme-label { display: none !important; }
+  .topbar .btn { padding-left: 9px !important; padding-right: 9px !important; }
+  .topbar .btn .badge, .topbar .btn span[style*="background: #ef4444"] { margin-left: -2px; }
+}
+/* ── Teléfono grande / tableta chica: sí caben las etiquetas ── */
+@media (min-width: 641px) and (max-width: 900px) {
+  .topbar .notif-label, .topbar .theme-label { display: inline !important; }
+}
+
+/* ============================================================
+   RONDA 4 — mensajería full-screen, lightbox seguro, PACS táctil,
+   landscape apaisado y auth con scroll
+   ============================================================ */
+
+/* ── CommunicationHub: hoja a pantalla completa en teléfono ── */
+@media (max-width: 640px) {
+  .comm-hub-backdrop { padding: 0 !important; align-items: stretch !important; }
+  .comm-hub-backdrop .comm-hub-panel {
+    width: 100% !important;
+    height: 100vh !important; height: 100dvh !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+  }
+  .comm-hub-input { padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important; }
+  .comm-hub-textarea { font-size: 16px !important; }
+}
+
+/* ── Inputs de chat: sin zoom iOS + área segura ── */
+@media (max-width: 760px) {
+  .comm-panel-input { padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important; }
+  .comm-panel-input textarea { font-size: 16px !important; }
+}
+
+/* ── Lightbox: cerrar y barra fuera del notch / home indicator ── */
+.comm-lightbox-close {
+  top: max(18px, env(safe-area-inset-top)) !important;
+  right: max(18px, env(safe-area-inset-right)) !important;
+}
+.comm-lightbox-bar {
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+  max-width: 94vw;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+@media (max-width: 640px) {
+  .comm-lightbox-img { max-height: 76vh !important; max-height: 76dvh !important; }
+}
+
+/* ── PACS táctil: botones y sliders más grandes ── */
+@media (hover: none) and (pointer: coarse) {
+  .pacs-topbar .btn { min-width: 44px; min-height: 44px; }
+  .pacs-bottombar button { min-height: 40px; }
+  .pacs-bottombar input[type="range"] { width: 110px !important; }
+}
+
+/* ── Tira de miniaturas del radiólogo: scroll con snap ── */
+@media (max-width: 900px) {
+  .rx-thumbs {
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .rx-thumbs::-webkit-scrollbar { display: none; }
+  .rx-thumbs .rx-thumb { scroll-snap-align: center; }
+}
+@media (max-width: 640px) {
+  .rx-thumbs { height: auto !important; min-height: 96px; padding: 8px !important; }
+  .rx-thumbs .rx-thumb { height: 78px !important; width: 78px !important; }
+}
+
+/* ── Landscape con poca altura Y ancho suficiente: lector en fila ── */
+@media (max-height: 500px) and (orientation: landscape) and (min-width: 600px) {
+  .rx-reader { flex-direction: row !important; overflow: hidden !important; }
+  .rx-pane-visor { width: auto !important; flex: 1 !important; min-height: 0 !important; border-right: 1px solid #1e3a5f !important; border-bottom: none !important; }
+  .rx-pane-editor, .rx-pane-comm { width: 300px !important; border-bottom: none !important; overflow-y: auto !important; padding-bottom: 0 !important; min-height: 0 !important; }
+}
+
+/* ── Banner de supervisión: se envuelve en móvil ── */
+@media (max-width: 640px) {
+  .admin-banner { flex-wrap: wrap; border-radius: 10px !important; }
+  .admin-banner .btn { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ── Auth con scroll en pantallas bajas (landscape) ── */
+@media (max-height: 620px) {
+  .auth-page { overflow-y: auto; align-items: flex-start; padding: 14px 0; }
+  .auth-card { margin: auto; }
+}
+
+/* ============================================================
+   RONDA 5 — admin, expediente, avisos, emoji e instalación
+   ============================================================ */
+
+/* ── Tarjetas de usuario del admin: apiladas con botones grandes ── */
+@media (max-width: 640px) {
+  .admin-user-card { flex-wrap: wrap !important; }
+  .admin-user-card .flex-1 { flex: 1 1 55% !important; }
+  .admin-user-card .btn { flex: 1 1 30%; justify-content: center; min-height: 40px; }
+}
+/* ── Filas de auditoría: fecha+acción arriba, detalle completo abajo ── */
+@media (max-width: 640px) {
+  .admin-audit-row { flex-wrap: wrap !important; gap: 6px 10px !important; align-items: flex-start !important; }
+  .admin-audit-row .text-sm {
+    flex: 1 1 100% !important; order: 5;
+    white-space: normal !important; overflow: visible !important;
+    line-height: 1.5;
+  }
+}
+
+/* ── Expediente de paciente: tabs compactos y rejilla a 1 columna ── */
+@media (max-width: 760px) {
+  .modal .tabs { padding: 0 12px !important; }
+  .modal-body [style*="minmax(min(100%, 260px)"] { grid-template-columns: 1fr !important; }
+}
+
+/* ── Dropdown de avisos: altura adaptada a pantallas bajas ── */
+.notif-list { overscroll-behavior: contain; }
+@media (max-height: 700px) {
+  .notif-list { max-height: 52vh !important; max-height: 52dvh !important; }
+}
+
+/* ── Emoji picker: dentro de la pantalla y botones táctiles ── */
+[role="dialog"][aria-label="Selector de emojis"] {
+  max-width: calc(100vw - 32px);
+}
+@media (max-width: 400px) {
+  [role="dialog"][aria-label="Selector de emojis"] { width: calc(100vw - 32px) !important; }
+}
+@media (hover: none) and (pointer: coarse) {
+  [role="dialog"][aria-label="Selector de emojis"] button { min-width: 40px; min-height: 40px; }
+}
+
+/* ── Reportes: periodos a todo ancho con botones repartidos ── */
+@media (max-width: 640px) {
+  .reportes-periodos { flex: 1 1 100%; display: flex; }
+  .reportes-periodos button { flex: 1; justify-content: center; }
+}
+
+/* ── Ronda 7: teclados y altura táctil ── */
+/* Campos de una línea con altura cómoda para el pulgar (solo táctil) */
+@media (hover: none) and (pointer: coarse) {
+  input.input, select.input { min-height: 44px; }
+  input[type="date"].input { min-height: 48px; }
+}
+/* Chat del detalle: sin zoom iOS */
+@media (max-width: 760px) {
+  .study-chat-bar textarea { font-size: 16px !important; }
+}
+
+/* ── Ronda 10: carpetas, lote y toasts oscuros ── */
+@media (max-width: 760px) {
+  /* Barra de lote: texto arriba, botón a todo ancho abajo */
+  .lote-bar { flex-wrap: wrap; padding: 10px 12px 0 !important; }
+  .lote-bar > div:first-child { flex: 1 1 100%; }
+  .lote-bar .btn { flex: 1 1 100%; justify-content: center; min-height: 46px; }
+}
+@media (max-width: 640px) {
+  /* Header de carpeta: avatar + info arriba, acciones a todo ancho */
+  .carp-head .btn { flex: 1 1 140px; justify-content: center; min-height: 44px; }
+}
+/* Toasts: el fondo pastel inline los vuelve ilegibles en modo oscuro */
+html.dark .toast { background: var(--color-surface) !important; }
+html.dark .toast > div > div:first-child { background: var(--color-surface-2) !important; border-color: var(--color-border) !important; }
+
+/* ============================================================
+   RX CCDX — Capa Responsive Móvil v4
+   Remates: anula estilos inline fijos (!important vence al
+   atributo style) y apila lo que aún quedaba en fila.
+   ============================================================ */
+
+/* ── 1. Raíz: ningún contenedor puede superar el viewport ── */
+.app-container[style*="100vw"] { width: 100% !important; max-width: 100vw; }
+.app-container { max-width: 100vw; }
+
+/* ── 2. Topbar: el botón principal pasa a fila completa ── */
+@media (max-width: 640px) {
+  .topbar .btn-primary { grid-column: 1 / -1; width: 100%; justify-content: center; }
+  /* Banner de supervisión y barra de lote: apilados */
+  .main-content > div[style*="linear-gradient(90deg, #2e1065"] { flex-wrap: wrap !important; border-radius: 0 !important; }
+  .main-content > div[style*="linear-gradient(90deg, #2e1065"] .btn { width: 100%; justify-content: center; }
+}
+
+/* ── 3. Filas de a dos en formularios (Registro, etc.) ── */
+@media (max-width: 640px) {
+  .form-row-2col { flex-direction: column !important; }
+  .form-row-2col > div { width: 100% !important; }
+  .modal fieldset { padding: 12px !important; }
+}
+
+/* ── 4. SuperAdmin: filas de estado y actividad con wrap ── */
+@media (max-width: 760px) {
+  .admin-estado-label { flex: 1 1 100% !important; white-space: normal !important; }
+  .admin-main .card-flat > div > button[style*="display: flex"] { flex-wrap: wrap !important; }
+  .admin-main .card-flat > div > div[style*="display: flex"] { flex-wrap: wrap !important; gap: 8px !important; }
+  /* Actividad: fecha y usuario en su propia línea, detalle con wrap */
+  .admin-main .card-flat div[style*="fontSize: 12.5"] { flex-wrap: wrap !important; row-gap: 6px !important; }
+  .admin-main .card-flat div[style*="fontSize: 12.5"] > span[style*="nowrap"] { white-space: normal !important; overflow: visible !important; flex: 1 1 100% !important; }
+}
+
+/* ── 5. AdminPanel embebido: auditoría 6 cols → 1 col ── */
+@media (max-width: 900px) {
+  .admin-audit-grid { grid-template-columns: 1fr !important; }
+  .admin-audit-grid > div { display: flex !important; gap: 8px !important; }
+  .admin-audit-grid > div .btn { flex: 1; justify-content: center; }
+}
+@media (max-width: 760px) {
+  /* Tarjeta de usuario: avatar + datos arriba, acciones abajo */
+  .admin-main .card-flat > div[style*="alignItems"] { flex-wrap: wrap !important; }
+}
+
+/* ── 6. Reportes: selector de periodos con scroll ── */
+@media (max-width: 900px) {
+  .reportes-periodos {
+    max-width: 100%; overflow-x: auto !important; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .reportes-periodos::-webkit-scrollbar { display: none; }
+  .reportes-periodos button { flex-shrink: 0; }
+  .reportes-root .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .reportes-root .table-wrap table { min-width: 560px; }
+}
+
+/* ── 7. Radiólogo: insignias y nombre compactos ── */
+@media (max-width: 900px) {
+  .rx-user-label { display: none !important; }
+  .rx-pending-badge { margin-left: 8px !important; padding: 2px 8px !important; font-size: 11px !important; }
+  .rx-header .sidebar-brand { width: 38px; height: 28px; margin-right: 8px !important; }
+}
+@media (max-width: 640px) {
+  .rx-header-title h2 { font-size: 12.5px !important; }
+  /* Editor y chat: sin min-height que empuje fuera de pantalla */
+  .rx-pane-visor { min-height: 52dvh; }
+  .rx-pane-comm { min-height: 300px; }
+}
+
+/* ── 8. PACS: gestos móviles y controles compactos ── */
+@media (max-width: 900px) {
+  /* Permite el scroll vertical de la página desde la placa;
+     el pan/zoom con 1 dedo sigue funcionando por pointer events */
+  .pacs-img-area { touch-action: pan-y !important; }
+  .pacs-topbar > div[style*="width: 1"],
+  .pacs-bottombar > div[style*="width: 1"] { display: none !important; }
+  .pacs-bottombar label { width: 100%; justify-content: space-between; }
+  .pacs-bottombar label input[type="range"] { flex: 1; width: auto !important; min-width: 0; }
+}
+
+/* ── 9. StudyDetailModal: pestañas, archivos y chat ── */
+@media (max-width: 760px) {
+  .tabs { overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 0 12px !important; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs .tab-btn { flex-shrink: 0; white-space: nowrap; }
+}
+@media (max-width: 640px) {
+  .study-chat-bar { flex-wrap: wrap !important; }
+  .study-chat-bar > div { flex: 1 1 100% !important; min-width: 0; }
+  .study-chat-bar .btn { flex: 1; justify-content: center; min-height: 44px; }
+  .study-file-row { flex-wrap: wrap !important; }
+  .study-file-row > div:last-child { width: 100%; display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .study-file-row > div:last-child .btn { justify-content: center; }
+  .modal-footer .flex-1 { display: none !important; }
+  .modal-footer .btn { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ── 10. Centro de notificaciones: cabecera con wrap ── */
+@media (max-width: 640px) {
+  .notif-dropdown-head { flex-wrap: wrap !important; row-gap: 8px !important; }
+  .notif-dropdown-head strong { flex: 1 1 100% !important; }
+  .notif-dropdown-head .btn { flex: 1; justify-content: center; }
+}
+
+/* ── 11. Hub de mensajería: panel casi completo en teléfono ── */
+@media (max-width: 640px) {
+  .comm-hub-panel { width: calc(100vw - 24px) !important; height: calc(100dvh - 90px) !important; border-radius: 14px !important; }
+  .comm-hub-bubble { padding-left: 12px !important; padding-right: 12px !important; }
+  .comm-hub-bubble > div { max-width: 94% !important; }
+  .comm-lightbox-bar { flex-wrap: wrap !important; justify-content: center !important; max-width: 92vw !important; text-align: center; }
+  .comm-lightbox-bar > span { max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* ── 12. Burbujas del panel de comunicación en móvil ── */
+@media (max-width: 640px) {
+  .comm-bubble-row { padding-left: 12px !important; padding-right: 12px !important; }
+  .comm-bubble-row > div { max-width: 94% !important; }
+}
+
+/* ── 13. Informe: hoja y trazabilidad sin desborde ── */
+@media (max-width: 640px) {
+  .paper-trace { flex-wrap: wrap !important; }
+  .informe-text { overflow-wrap: break-word !important; word-break: break-word !important; }
+}
+
+/* ── 14. Carpetas: diagnóstico y paginaciones con wrap ── */
+@media (max-width: 640px) {
+  .carp-diag-row { flex-direction: column !important; align-items: stretch !important; }
+  .carp-diag-row .btn { width: 100%; justify-content: center; }
+  .carp-doc-row { flex-wrap: wrap !important; }
+  .carp-pager { flex-wrap: wrap !important; gap: 8px !important; }
+  .carp-pager .btn { flex: 1; justify-content: center; }
+}
+
+/* ── 15. Safe-area: la tabbar y hojas respetan el notch ── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .modal-footer { padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important; }
+  .dash-list, .dash-page { padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
+}

@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import Icon from './Icons';
 import { API_URL, authenticatedFileUrl } from '../config';
+import Thumb from './Thumb';
 import { formatHora } from '../utils/format';
 import { insertarEmoji } from '../utils/emoji';
 import EmojiPicker from './EmojiPicker';
@@ -296,13 +297,13 @@ const CommunicationHub = ({ onClose }) => {
       `}</style>
 
       {/* ── Backdrop ── */}
-      <div style={{
+      <div className="comm-hub-backdrop" style={{
         position: 'fixed', inset: 0, zIndex: 2000,
         background: 'rgba(7,24,45,.42)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
         padding: 20,
       }}>
-        <section style={{
+        <section className="comm-hub-panel" style={{
           width: 'min(460px, 100%)', height: 'min(680px, 88vh)',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           borderRadius: 16,
@@ -401,7 +402,7 @@ const CommunicationHub = ({ onClose }) => {
                   return (
                     <div
                       key={msg.id}
-                      className={mine ? 'hub-bubble-mine' : 'hub-bubble-other'}
+                      className={`${mine ? 'hub-bubble-mine' : 'hub-bubble-other'} comm-hub-bubble`}
                       style={{
                         display: 'flex',
                         justifyContent: mine ? 'flex-end' : 'flex-start',
@@ -489,8 +490,9 @@ const CommunicationHub = ({ onClose }) => {
                               onClick={() => setLightbox({ url: fileUrl, name: msg.archivo_original })}
                               style={{ display: 'block', marginTop: msg.contenido ? 8 : 0, padding: 0, border: 0, background: 'transparent', cursor: 'zoom-in' }}
                             >
-                              <img
-                                src={fileUrl}
+                              <Thumb
+                                url={`/api/comunicacion/archivos/${encodeURIComponent(msg.archivo_nombre)}`}
+                                token={user.token}
                                 alt={msg.archivo_original}
                                 style={{ display: 'block', width: 220, maxWidth: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 9, border: '1px solid rgba(255,255,255,.2)' }}
                               />
@@ -608,7 +610,7 @@ const CommunicationHub = ({ onClose }) => {
           )}
 
           {/* ── Input de mensaje ── */}
-          <footer style={{
+          <footer className="comm-hub-input" style={{
             padding: '8px 10px', flexShrink: 0,
             background: isDark ? '#1f2c34' : '#f0f2f5',
             display: 'flex', alignItems: 'flex-end', gap: 7,
@@ -653,6 +655,8 @@ const CommunicationHub = ({ onClose }) => {
             <textarea
               ref={textRef}
               value={text}
+              className="comm-hub-textarea"
+              enterKeyHint="send"
               onChange={e => handleTyping(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Mensaje…"
@@ -706,7 +710,7 @@ const CommunicationHub = ({ onClose }) => {
               style={{ maxWidth: '94vw', maxHeight: '82vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,.5)' }}
             />
             {/* Barra inferior con nombre + descarga */}
-            <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', bottom: 28, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div onClick={e => e.stopPropagation()} className="comm-lightbox-bar" style={{ position: 'absolute', bottom: 28, display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>{lightbox.name}</span>
               <a
                 href={lightbox.url}
@@ -728,6 +732,7 @@ const CommunicationHub = ({ onClose }) => {
             <button
               onClick={() => setLightbox(null)}
               aria-label="Cerrar imagen ampliada"
+              className="comm-lightbox-close"
               style={{ position: 'absolute', top: 18, right: 18, width: 40, height: 40, border: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.14)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <Icon name="close" size={19} color="#fff" />
