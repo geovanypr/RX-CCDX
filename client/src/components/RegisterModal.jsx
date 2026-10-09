@@ -37,6 +37,7 @@ const EMPTY_FORM = {
 const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
   const { user } = useContext(AuthContext);
   const [loadingId, setLoadingId] = useState(true);
+  const [idError, setIdError] = useState(false);
   const [patientLookup, setPatientLookup] = useState(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,8 +67,8 @@ const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then(r => r.json())
-      .then(d => { if (d.registro_id) setFormData(prev => ({ ...prev, registro_id: d.registro_id })); })
-      .catch(() => {})
+      .then(d => { if (d.registro_id) setFormData(prev => ({ ...prev, registro_id: d.registro_id })); else setIdError(true); })
+      .catch(() => { setIdError(true); })
       .finally(() => setLoadingId(false));
   }, [initialPatient, user.token]);
 
@@ -268,6 +269,11 @@ const RegisterModal = ({ onClose, onSuccess, initialPatient = null }) => {
                   </span>
                 )}
               </div>
+              {idError && !loadingId && (
+                <p className="field-hint" role="status">
+                  Sin conexión para generar el ID: escríbelo manual con formato RX-000001.
+                </p>
+              )}
               {isExistingPatient && (
                 <div className="alert alert-success" style={{ marginTop: 8, marginBottom: 0, padding: '9px 12px', fontSize: 12.5 }}>
                   <span>✓</span>

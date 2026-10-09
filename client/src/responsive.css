@@ -699,6 +699,28 @@ body { -webkit-tap-highlight-color: transparent; }
   /* Header de carpeta: avatar + info arriba, acciones a todo ancho */
   .carp-head .btn { flex: 1 1 140px; justify-content: center; min-height: 44px; }
 }
+/* ── Footers de modal a prueba de pantallas angostas: apilados, sin
+   desbordes y con la acción principal primero ── */
+@media (max-width: 640px) {
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    max-height: 42vh;
+    max-height: 42dvh;
+    overflow-y: auto;
+  }
+  .modal-footer .btn {
+    flex: none;
+    width: 100%;
+    min-height: 48px;
+    white-space: normal;
+    text-align: center;
+  }
+  .modal-footer .flex-1 { display: none; }
+  /* Registrar placa: el submit siempre visible y primero */
+  .register-submit { min-width: 0 !important; order: -1; }
+}
+
 /* Toasts: el fondo pastel inline los vuelve ilegibles en modo oscuro */
 html.dark .toast { background: var(--color-surface) !important; }
 html.dark .toast > div > div:first-child { background: var(--color-surface-2) !important; border-color: var(--color-border) !important; }
