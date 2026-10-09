@@ -796,7 +796,7 @@ const RadiologistView = () => {
                 <Icon name="fileText" size={14} color="currentColor" /> Informe
               </button>
               <button className={mobileSection === 'info' ? 'active' : ''} onClick={() => setMobileSection('info')}>
-                <Icon name="info" size={14} color="currentColor" /> Paciente
+                <Icon name="user" size={14} color="currentColor" /> Paciente & Chat
               </button>
             </div>
             {/* ---------- Izquierda: visor ---------- */}
@@ -873,7 +873,7 @@ const RadiologistView = () => {
               </div>
 
               {/* Info del paciente */}
-              <div className="rx-visor-info" style={{ background: '#0f2b4e', padding: '14px 16px', borderTop: '1px solid #1e3a5f' }}>
+              <div className="rx-visor-info rx-visor-info-desktop" style={{ background: '#0f2b4e', padding: '14px 16px', borderTop: '1px solid #1e3a5f' }}>
                 {isDevuelta && paciente.nota_revision && (
                   <div style={{ padding: '10px 14px', background: 'rgba(244,63,94,0.12)', borderRadius: 10, borderLeft: '4px solid #f43f5e', marginBottom: 12 }}>
                     <strong style={{ fontSize: 11, color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Nota de corrección del encargado</strong>
@@ -1075,7 +1075,85 @@ const RadiologistView = () => {
             </div>
 
             {/* ---------- Derecha: comunicación ---------- */}
-            <div className={`rx-pane-comm${mobileSection !== 'info' ? ' rx-section-hidden' : ''}`} style={{ width: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className={`rx-pane-comm${mobileSection !== 'info' ? ' rx-section-hidden' : ''}`} style={{ width: 310, flexShrink: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+              {/* Info del paciente (solo visible en móvil en la sección Paciente & Chat) */}
+              <div className="rx-visor-info rx-patient-info-mobile" style={{ background: '#0f2b4e', padding: '14px 16px', borderBottom: '1px solid #1e3a5f' }}>
+                {isDevuelta && paciente.nota_revision && (
+                  <div style={{ padding: '10px 14px', background: 'rgba(244,63,94,0.12)', borderRadius: 10, borderLeft: '4px solid #f43f5e', marginBottom: 12 }}>
+                    <strong style={{ fontSize: 11, color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Nota de corrección del encargado</strong>
+                    <p style={{ marginTop: 5, color: '#fecdd3', fontSize: 12.5, lineHeight: 1.55 }}>{paciente.nota_revision}</p>
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => handleAlternarUrgente(selectedEstudio)}
+                    className="btn btn-xs"
+                    title="Alternar la prioridad de este estudio"
+                    style={{ gap: 5, background: selectedEstudio.urgente ? '#ef4444' : 'rgba(255,255,255,0.10)', color: '#fff', fontWeight: 700, border: '1px solid rgba(255,255,255,0.14)' }}
+                  >
+                    <Icon name="bell" size={11} color="#fff" /> {selectedEstudio.urgente ? 'Quitar urgencia' : 'Marcar urgente'}
+                  </button>
+                  {selectedEstudio.urgente ? (
+                    <span style={{ fontSize: 11, color: '#fda4af', fontWeight: 700 }}>Prioridad máxima en la lista de trabajo</span>
+                  ) : null}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px 14px', fontSize: 12.5 }}>
+                  <div><span style={{ color: '#64748b' }}>Paciente:</span> <strong style={{ color: '#e2e8f0' }}>{paciente.nombre} ({paciente.edad} años)</strong></div>
+                  <div><span style={{ color: '#64748b' }}>Registro:</span> <strong className="mono" style={{ color: '#a8c2ea' }}>{paciente.registro_id}</strong></div>
+                  <div><span style={{ color: '#64748b' }}>Estudio:</span> <span style={{ color: '#cbd5e1' }}>{paciente.tipo_estudio}{regionEstudio ? ` · ${regionEstudio}` : ''}</span></div>
+                  <div><span style={{ color: '#64748b' }}>Ref.:</span> <span style={{ color: '#cbd5e1' }}>{paciente.medico_remitente}</span></div>
+                </div>
+                {paciente.notas !== 'Sin notas clínicas.' && (
+                  <div style={{ marginTop: 10, padding: '9px 12px', background: 'rgba(34,197,94,0.1)', borderRadius: 8, borderLeft: '3px solid #22c55e' }}>
+                    <p style={{ fontSize: 11.5, color: '#86efac', lineHeight: 1.5, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                      <Icon name="info" size={13} color="#86efac" style={{ flexShrink: 0, marginTop: 1 }} />{paciente.notas}
+                    </p>
+                  </div>
+                )}
+
+                {/* Historial clínico previo */}
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Historial clínico previo</span>
+                    {historialPrevios.length > 0 && (
+                      <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(51,153,255,0.22)', color: '#8cc3ff', padding: '1px 8px', borderRadius: 999 }}>{historialPrevios.length}</span>
+                    )}
+                  </div>
+                  {historialPrevios.length > 0 && (
+                    <button
+                      className="btn btn-xs"
+                      onClick={abrirComparacion}
+                      style={{ marginBottom: 8, gap: 5, background: 'rgba(51,153,255,0.18)', color: '#8cc3ff', border: '1px solid rgba(51,153,255,0.3)', width: '100%', justifyContent: 'center' }}
+                    >
+                      <Icon name="eye" size={12} color="#8cc3ff" /> Comparar con el estudio previo
+                    </button>
+                  )}
+                  {historialLoading ? (
+                    <p style={{ fontSize: 11.5, color: '#4b5f85' }}>Cargando historial...</p>
+                  ) : historialPrevios.length === 0 ? (
+                    <p style={{ fontSize: 11.5, color: '#334155' }}>Sin estudios previos registrados.</p>
+                  ) : (
+                    <div style={{ maxHeight: 150, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {historialPrevios.map(h => (
+                        <div key={h.id} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 8, border: '1px solid #1e3a5f' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <strong style={{ fontSize: 11, color: '#8cc3ff' }}>{h.tipo_estudio}</strong>
+                            <span style={{ fontSize: 10, color: '#5f7ba0' }}>{h.fecha_estudio}</span>
+                            <span style={{ fontSize: 9.5, marginLeft: 'auto', padding: '1px 7px', borderRadius: 999, background: '#1e293b', color: '#94a3b8' }}>{h.estado}</span>
+                          </div>
+                          {h.diagnostico ? (
+                            <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, whiteSpace: 'pre-wrap', lineHeight: 1.45, maxHeight: 54, overflow: 'hidden', fontFamily: '"Times New Roman", Times, serif' }}>
+                              {h.diagnostico}
+                            </p>
+                          ) : (
+                            <p style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Sin diagnóstico emitido.</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
               <CommunicationPanel
                 estudio={selectedEstudio}
                 onFileUploaded={() => loadArchivos(selectedEstudio)}
